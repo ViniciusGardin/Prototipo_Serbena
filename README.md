@@ -5,4 +5,5 @@
 
 # STM32F103C8T6
 
-	Este é o microcontrolador utilizado, ele necessita da biblioteca STM32F10x_StdPeriph_Lib_V3.5.0, do compilador gcc-arm-none-eabi e do programador ST-link
+	Este é o microcontrolador utilizado, ele necessita da biblioteca STM32F10x_StdPeriph_Lib_V3.5.0, do
+	compilador gcc-arm-none-eabi e do programador ST-link.
