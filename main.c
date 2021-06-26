@@ -18,9 +18,8 @@
 // stm32f10x_rcc.h Biblioteca do clock
 // stm32f10x_it.h  Biblioteca do interrupções
 
-//PA01 ADC1 IN1		OK!
-//ADC 			OK!
-//Interrupt		
+//ADC ADC1 IN1		OK!
+//Interrupt		OK!
 //DMA ADC1 Ch1 DMA1	OK!
 //GPIO PA01 ADC1	OK!
 
