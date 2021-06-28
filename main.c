@@ -1,22 +1,24 @@
-//########################################################
-// Descrição
-// 
-// Utiliza o pino PA01 para fazer uma conversão pelo ADC 
-// utilizando o canal 01 do ADC1 continuamente. Os valores 
-// da conversão são colocados na variavel diretamente na 
-// memoria pelo DMA.
-//########################################################
-// Pinos conectados
+//*********************** Prototipo Serbena **************************
+//    Autor: Vinicius Gardin Pires da Silva
+//    Pinos utilizados:
 //
-// PA01 - ADC
-//########################################################
-//Bibliotecas Utilizadas
+//    PA01 - ADC
 //
-// stm32f10x.h	   Biblioteca do STM32f10
-// stm32f10x_adc.h Biblioteca do ADC
-// stm32f10x_dma.h Biblioteca do DMA
-// stm32f10x_rcc.h Biblioteca do clock
-// stm32f10x_it.h  Biblioteca do interrupções
+//    Bibliotecas utilizadas:
+//
+//    stm32f10x.h	Biblioteca do STM32f10
+//    stm32f10x_adc.h 	Biblioteca do ADC
+//    stm32f10x_dma.h 	Biblioteca do DMA
+//    stm32f10x_rcc.h 	Biblioteca do clock
+//    stm32f10x_it.h  	Biblioteca do interrupções
+//
+//********************************************************************
+//    DATA      |   Descrição
+//********************************************************************
+// 28/06/2021   |   Conexão ao github
+//              |
+//--------------------------------------------------------------------
+
 
 //ADC ADC1 IN1		OK!
 //Interrupt		OK!
