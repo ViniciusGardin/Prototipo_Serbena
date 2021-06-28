@@ -24,6 +24,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
 
+extern int DMA_flag;
 /** @addtogroup STM32F10x_StdPeriph_Examples
   * @{
   */
@@ -155,7 +156,7 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 void DMA1_Channel1_IRQHandler() {
-
+	DMA_flag = 1;
 }
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
