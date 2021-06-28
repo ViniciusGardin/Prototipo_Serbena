@@ -1,7 +1,7 @@
 # Prototipo_Serbena
-	Programa desenvolvido durante a IC:
-	*"Construção de Dispositivo Eletrônico Portátil para Medida de Impedância Operando de 1 kHz a 10 kHz"*
-	Para utilizar o metodo lock-in por subtração para medir a impedancia.
+Programa desenvolvido durante a IC:
+"Construção de Dispositivo Eletrônico Portátil para Medida de Impedância Operando de 1 kHz a 10 kHz"
+Para utilizar o metodo lock-in por subtração para medir a impedancia.
 
 # STM32F103C8T6
 
