@@ -11,20 +11,24 @@
 //    stm32f10x_adc.h 	Biblioteca do ADC
 //    stm32f10x_dma.h 	Biblioteca do DMA
 //    stm32f10x_rcc.h 	Biblioteca do clock
+//    stm32f10x_usart.h	Biblioteca do USART
 //    stm32f10x_it.h  	Biblioteca do interrupções
 //
 //********************************************************************
-//    DATA      |   Descrição
+//    DATA      |	Descrição
 //********************************************************************
-// 28/06/2021   |   Conexão com github
-//              |
+// 28/06/2021   |	Conexão com github
+// 29/06/2021	|	Add LED
+// 30/06/2021	|	Add USART
 //--------------------------------------------------------------------
 
 
 //ADC ADC1 IN1		OK!
 //Interrupt		OK!
 //DMA ADC1 Ch1 DMA1	OK!
-//GPIO PA01 ADC1	OK!
+//GPIO PA01 ADC1	
+//Clock			
+//USART
 
 #include <stm32f10x.h>
 
@@ -47,6 +51,33 @@ void init_Clock() {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC | RCC_APB2Periph_ADC1, ENABLE);
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
+
+	RCC_APB2PeriphClockCmd(USARTy_GPIO_CLK | USARTz_GPIO_CLK | RCC_APB2Periph_AFIO, ENABLE);
+
+#ifndef USE_STM3210C_EVAL
+  /* Enable USARTy Clock */
+  RCC_APB2PeriphClockCmd(USARTy_CLK, ENABLE); 
+	return;
+}
+
+void init_USART() {
+	USART_InitTypeDef USART_InitStruct;
+
+	USART_InitStruct.USART_BaudRate = 115200;
+	USART_InitStruct.USART_WordLength = USART_WordLength_8b;
+	USART_InitStruct.USART_StopBits = USART_StopBits_1;
+	USART_InitStruct.USART_Parity = USART_Parity_No;
+	USART_InitStruct.USART_Mode = USART_Mode_Tx;
+	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_Init(USART1, USART_InitStruct);
+
+	USART_Cmd(USART1, ENABLE);
+	return;
+}
+
+void send_Data(float value) {
+	 while(!(USART_GetFlagStatus(USARTy, USART_FLAG_TXE))){__NOP();}
+
 }
 
 
@@ -123,6 +154,12 @@ void init_GPIO()
 	GPIO_InitStructure2.GPIO_Pin = GPIO_Pin_13;
 	GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOC, &GPIO_InitStructure2);
+
+	//USART
+	GPIO_InitStructure3.GPIO_Pin = USARTy_TxPin;
+	//GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_OD;
+	GPIO_Init(USARTy_GPIO, &GPIO_InitStructure3);	
 }
 
 void init_NVIC() {
@@ -143,14 +180,16 @@ int main(void) {
 	init_ADC();
 	init_DMA();
 	init_NVIC();
+	init_USART();
 
 	while(1) {
 		if(DMA_flag) {
+	 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){__NOP();}
+			USART_SendData(USART1, data);
 			GPIO_SetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/60; i++){__NOP();}
+			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
 			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/60; i++){__NOP();}
-
+			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
 		}
 	}
 }

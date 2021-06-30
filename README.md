@@ -5,3 +5,9 @@ Programa desenvolvido durante a IC:
 # STM32F103C8T6
 
 Este é o microcontrolador utilizado, ele necessita da biblioteca STM32F10x_StdPeriph_Lib_V3.5.0, do compilador gcc-arm-none-eabi e do programador ST-link.
+
+# Main
+
+No main é feito uma conversão ADC, cujo resultado é tranferido para memoria pelo DMA.
+ - Existe uma interrupção na finalização da tranferencia do DMA que seta uma flag
+ - Existe uma comunicação USART para debuggar
