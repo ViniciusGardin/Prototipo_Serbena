@@ -25,6 +25,7 @@
 //Interrupt		OK!
 //DMA ADC1 Ch1 DMA1	OK!
 //GPIO PA01 ADC1	OK!
+//SPI			NOT!
 
 #include <stm32f10x.h>
 
