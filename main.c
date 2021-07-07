@@ -22,42 +22,55 @@
 // 30/06/2021	|	Add USART
 //--------------------------------------------------------------------
 
-
-//ADC ADC1 IN1		OK!
-//Interrupt		OK!
-//DMA ADC1 Ch1 DMA1	OK!
-//GPIO PA01 ADC1	
-//Clock			
-//USART
+/*
+ * TODO: Implementar a USART
+ *
+ */
 
 #include <stm32f10x.h>
 
 #define ADC1_DR_Address    ((uint32_t)0x4001244C)
-uint16_t data;
+uint16_t data = 0;
 int DMA_flag = 0;
 
-//#define DMA1_Channel1_IT_Mask    ((uint32_t)(DMA_ISR_GIF1 | DMA_ISR_TCIF1 | DMA_ISR_HTIF1 | DMA_ISR_TEIF1))
 
-//ITStatus ADC_GetITStatus(ADC_TypeDef* ADCx, uint16_t ADC_IT);
-//void ADC_ClearITPendingBit(ADC_TypeDef* ADCx, uint16_t ADC_IT);
-//void DMA_SetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx, uint16_t DataNumber); 
-//uint16_t DMA_GetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx);
-//FlagStatus DMA_GetFlagStatus(uint32_t DMAy_FLAG);
-//void DMA_ClearFlag(uint32_t DMAy_FLAG);
-//ITStatus DMA_GetITStatus(uint32_t DMAy_IT);
-//void DMA_ClearITPendingBit(uint32_t DMAy_IT);
+void init_Clock();	//Config do clock para tudo
+void init_GPIO();	//Pinos do processador
+void init_NVIC();	//Interrupções
+void init_ADC();	//Conversor AD
+void init_DMA();	//Direct Memory Access
+
+//Para debbugar
+void init_USART();
+
+int main(void) {
+	init_Clock();
+	init_GPIO();
+	init_ADC();
+	init_DMA();
+	init_NVIC();
+	init_USART();
+
+	while(1) {
+		if(DMA_flag) {
+	 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){__NOP();}
+			USART_SendData(USART1, data);
+			GPIO_SetBits(GPIOC, GPIO_Pin_13);
+			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
+			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
+		}
+	}
+}
 
 void init_Clock() {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_GPIOC | RCC_APB2Periph_ADC1, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA  |
+		      		RCC_APB2Periph_GPIOC |
+		      		RCC_APB2Periph_ADC1  |
+		      		RCC_APB2Periph_USART1, ENABLE);
+
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
-
-	RCC_APB2PeriphClockCmd(USARTy_GPIO_CLK | USARTz_GPIO_CLK | RCC_APB2Periph_AFIO, ENABLE);
-
-#ifndef USE_STM3210C_EVAL
-  /* Enable USARTy Clock */
-  RCC_APB2PeriphClockCmd(USARTy_CLK, ENABLE); 
-	return;
 }
 
 void init_USART() {
@@ -74,13 +87,6 @@ void init_USART() {
 	USART_Cmd(USART1, ENABLE);
 	return;
 }
-
-void send_Data(float value) {
-	 while(!(USART_GetFlagStatus(USARTy, USART_FLAG_TXE))){__NOP();}
-
-}
-
-
 
 void init_ADC() {
 	ADC_InitTypeDef ADC_InitStruct;
@@ -156,10 +162,12 @@ void init_GPIO()
 	GPIO_Init(GPIOC, &GPIO_InitStructure2);
 
 	//USART
-	GPIO_InitStructure3.GPIO_Pin = USARTy_TxPin;
-	//GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_OD;
-	GPIO_Init(USARTy_GPIO, &GPIO_InitStructure3);	
+	GPIO_InitTypeDef GPIO_InitStructure3;
+	GPIO_InitStructure3.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+	GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOA, &GPIO_InitStructure3);	
+	
 }
 
 void init_NVIC() {
@@ -173,24 +181,3 @@ void init_NVIC() {
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
 }
-
-int main(void) {
-	init_Clock();
-	init_GPIO();
-	init_ADC();
-	init_DMA();
-	init_NVIC();
-	init_USART();
-
-	while(1) {
-		if(DMA_flag) {
-	 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){__NOP();}
-			USART_SendData(USART1, data);
-			GPIO_SetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
-			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
-		}
-	}
-}
-
