@@ -3,6 +3,8 @@
 //    Pinos utilizados:
 //
 //    PA01 - ADC
+//    PA09 - TX1
+//    PA10 - RX1
 //    PC13 - Led
 //
 //    Bibliotecas utilizadas:
@@ -25,11 +27,15 @@
 /*
  * TODO: Implementar a USART
  *
+ * TODO: Calcular corretamente o tempo da função delay
+ *
  */
 
 #include <stm32f10x.h>
+#include "stm32f10x_conf.h"
 
 #define ADC1_DR_Address    ((uint32_t)0x4001244C)
+
 uint16_t data = 0;
 int DMA_flag = 0;
 
@@ -39,6 +45,7 @@ void init_GPIO();	//Pinos do processador
 void init_NVIC();	//Interrupções
 void init_ADC();	//Conversor AD
 void init_DMA();	//Direct Memory Access
+void delay();
 
 //Para debbugar
 void init_USART();
@@ -56,9 +63,9 @@ int main(void) {
 	 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){__NOP();}
 			USART_SendData(USART1, data);
 			GPIO_SetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
+			delay();
 			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-			for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
+			delay();
 		}
 	}
 }
@@ -82,7 +89,7 @@ void init_USART() {
 	USART_InitStruct.USART_Parity = USART_Parity_No;
 	USART_InitStruct.USART_Mode = USART_Mode_Tx;
 	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_Init(USART1, USART_InitStruct);
+	USART_Init(USART1, &USART_InitStruct);
 
 	USART_Cmd(USART1, ENABLE);
 	return;
@@ -180,4 +187,8 @@ void init_NVIC() {
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
+}
+
+void delay() {
+	for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
 }

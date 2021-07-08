@@ -8,6 +8,7 @@
 //ITStatus DMA_GetITStatus(uint32_t DMAy_IT);
 //void DMA_ClearITPendingBit(uint32_t DMAy_IT);
 
+//Lembrar de incluir no MakeFile TAMBEM!
 #include <stm32f10x_adc.h>
 #include <stm32f10x_dma.h>
 #include <stm32f10x_rcc.h>
@@ -17,5 +18,4 @@
 #include "stm32f10x_it.h"
 // no asserts
 #define assert_param(expr) ((void)0)
-
 #endif
