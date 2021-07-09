@@ -13,7 +13,7 @@
 //    stm32f10x_adc.h 	Biblioteca do ADC
 //    stm32f10x_dma.h 	Biblioteca do DMA
 //    stm32f10x_rcc.h 	Biblioteca do clock
-//    stm32f10x_usart.h	Biblioteca do USART
+//    stm32f10x_spi.h	Biblioteca do SPI
 //    stm32f10x_it.h  	Biblioteca do interrupções
 //
 //********************************************************************
@@ -21,11 +21,11 @@
 //********************************************************************
 // 28/06/2021   |	Conexão com github
 // 29/06/2021	|	Add LED
-// 30/06/2021	|	Add USART
+// 08/07/2021	|	Add SPI
 //--------------------------------------------------------------------
 
 /*
- * TODO: Implementar a USART
+ * TODO: Implementar a SPI
  *
  * TODO: Calcular corretamente o tempo da função delay
  *
@@ -48,7 +48,7 @@ void init_DMA();	//Direct Memory Access
 void delay();
 
 //Para debbugar
-void init_USART();
+void init_SPI();
 
 int main(void) {
 	init_Clock();
@@ -56,12 +56,12 @@ int main(void) {
 	init_ADC();
 	init_DMA();
 	init_NVIC();
-	init_USART();
+	init_SPI();
 
 	while(1) {
 		if(DMA_flag) {
-	 		while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET){__NOP();}
-			USART_SendData(USART1, data);
+			while(SPI_I2S_GetFlagStatus(SPIx, SPI_I2S_FLAG_TXE) == RESET){__NOP();}
+			SPI_I2S_SendData(SPIx, data);
 			GPIO_SetBits(GPIOC, GPIO_Pin_13);
 			delay();
 			GPIO_ResetBits(GPIOC, GPIO_Pin_13);
@@ -72,28 +72,42 @@ int main(void) {
 
 void init_Clock() {
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA  |
+		      		RCC_APB2Periph_GPIOB |
 		      		RCC_APB2Periph_GPIOC |
 		      		RCC_APB2Periph_ADC1  |
-		      		RCC_APB2Periph_USART1, ENABLE);
+		      		//RCC_APB2Periph_USART1, ENABLE);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
 }
 
-void init_USART() {
-	USART_InitTypeDef USART_InitStruct;
+void init_SPI() {
+	SPI_InitTypeDef SPI_InitStruct;
 
-	USART_InitStruct.USART_BaudRate = 115200;
-	USART_InitStruct.USART_WordLength = USART_WordLength_8b;
-	USART_InitStruct.USART_StopBits = USART_StopBits_1;
-	USART_InitStruct.USART_Parity = USART_Parity_No;
-	USART_InitStruct.USART_Mode = USART_Mode_Tx;
-	USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-	USART_Init(USART1, &USART_InitStruct);
+	SPI_InitStruct.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_InitStruct.SPI_Mode = SPI_Mode_Master
+	SPI_InitStruct.SPI_DataSize = SPI_DataSize_16b;
+	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
+	SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
+	SPI_InitStruct.SPI_NSS = SPI_NSS_Hard;
+	SPI_InitStruct.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
+	SPI_InitStruct.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_InitStruct.SPI_CRCPolynomial = 7;
 
-	USART_Cmd(USART1, ENABLE);
-	return;
+	I2S_InitTypeDef I2S_InitStruct;
+	I2S_InitStruct.I2S_Mode = I2S_Mode_SlaveTx;
+	I2S_InitStruct.I2S_Standard = I2S_Standard_Phillips;
+	I2S_InitStruct.I2S_DataFormat = I2S_DataFormat_16b;
+	I2S_InitStruct.I2S_MCLKOutput = I2S_MCLKOutput_Disable;
+	I2S_InitStruct.I2S_AudioFreq = I2S_AudioFreq_Default;
+	I2S_InitStruct.I2S_CPOL = I2S_CPOL_Low;
+
+	SPI_Init(SPI_TypeDef* SPIx, SPI_InitTypeDef* SPI_InitStruct)
+	I2S_Init(SPI_TypeDef* SPIx, I2S_InitTypeDef* I2S_InitStruct)
+	SPI_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState)
+	I2S_Cmd(SPI_TypeDef* SPIx, FunctionalState NewState)
 }
+
 
 void init_ADC() {
 	ADC_InitTypeDef ADC_InitStruct;
@@ -168,7 +182,14 @@ void init_GPIO()
 	GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init(GPIOC, &GPIO_InitStructure2);
 
-	//USART
+	//SPI
+	//SCK MOSI
+	GPIO_InitTypeDef GPIO_InitStructure3;
+	GPIO_InitStructure3.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+	GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_Init(GPIOA, &GPIO_InitStructure3);	
+	//MISO
 	GPIO_InitTypeDef GPIO_InitStructure3;
 	GPIO_InitStructure3.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
 	GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;

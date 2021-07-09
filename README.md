@@ -10,12 +10,14 @@ Este é o microcontrolador utilizado, ele necessita da biblioteca STM32F10x_StdP
 
 No main é feito uma conversão ADC, cujo resultado é tranferido para memoria pelo DMA.
  - Existe uma interrupção na finalização da tranferencia do DMA que seta uma flag
- - Existe uma comunicação USART para debuggar
+ - Existe uma comunicação SPI para debuggar
 ## Pinout
 
 | STM32F103C8 Pi | Modulos | Description |
 | :--------- | :---------- | :---------------------------------------- |
-| **Pn0x** | **SCK AD9833A** | SPI Clock pin |
+| **Pn0x** | **SCK Debug** | SPI Clock pin |
+| **Pn0x** | **MOSI Debug** | SPI Master Out Slave In data pin |
+| **Pn0x** | **SCK Debug** | SPI Clock pin |
 | **Pn0x** | **MOSI AD9833A** | SPI Master Out Slave In data pin |
 | **Pn0x** | **FSYNC AD9833A** | FSYNC pin |
 | **Pn0x** | **SCK AD9833B** | SPI Clock pin |
