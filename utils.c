@@ -24,6 +24,7 @@
 // 28/06/2021   |	Conexão com github
 // 29/06/2021	|	Add LED
 // 08/07/2021	|	Add SPI
+// 13/07/2021   |   Add utils
 //--------------------------------------------------------------------
 
 #include "utils.h"
@@ -31,9 +32,7 @@
 /*
  * TODO: ADC external trigger
  *
- * TODO: Checar o clock do spi
- *
- * TODO: RCC_PCLK2Config
+ * TODO: ADC change external trigger function
  *
  * TODO: Phase correction Marlio codigo
  *
@@ -59,8 +58,10 @@ void reset_AD9833() {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_0);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
 
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
     SPI_I2S_SendData(SP1, RESET_CMD);
 	delay(15);
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
     SPI_I2S_SendData(SP1, NORMAL_CMD);
 
 	GPIO_SetBits(GPIOB, GPIO_Pin_0);
@@ -118,12 +119,14 @@ void sleep_AD9833() {
 
 void writeRegisterA( uint16_t command ) {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_0);
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
     SPI_I2S_SendData(SP1, command);
 	GPIO_SetBits(GPIOB, GPIO_Pin_0);
 }
 
 void writeRegisterB( uint16_t command ) {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
+    while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
     SPI_I2S_SendData(SP1, command);
 	GPIO_SetBits(GPIOB, GPIO_Pin_1);
 }
@@ -142,6 +145,10 @@ void init_Clock() {
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
   	RCC_PCLK2Config(RCC_HCLK_Div2); 
+
+	/* RCC configuration STM librarie                            */
+  /* PCLK2 = HCLK/2 */
+  RCC_PCLK2Config(RCC_HCLK_Div2); 
 }
 
 void init_GPIO()
@@ -183,17 +190,8 @@ void init_GPIO()
 	
 }
 
-	//Single-channel continuous conversionMode
-void init_ADC() {
-	ADC_InitTypeDef ADC_InitStruct;
-	ADC_InitStruct.ADC_Mode = ADC_Mode_Independent;
-	ADC_InitStruct.ADC_ScanConvMode = DISABLE;
-	ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
-	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
-	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
-	ADC_InitStruct.ADC_NbrOfChannel = 1;
+void init_ADC(ADC_InitTypeDef* ADC_InitStruct) {
 	ADC_Init(ADC1, &ADC_InitStruct);
-
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
 	ADC_DMACmd(ADC1, ENABLE);
 	ADC_Cmd(ADC1, ENABLE);
@@ -209,6 +207,16 @@ void init_ADC() {
   	ADC_StartCalibration(ADC1);
   	while(ADC_GetCalibrationStatus(ADC1));
   	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+}
+
+// externalTrigger tem que ser RISE ou FALL
+void adc_Trigger(int externalTrigger) {
+		if(externalTrigger == RISE) {
+
+		}
+		else {
+
+		}
 }
 
 	//Configuração do DMA1 para receber informações do

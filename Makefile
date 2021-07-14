@@ -2,7 +2,7 @@
 STD_PERIPH_LIBS = /home/vini/Projetos/STM32/STM32F10x_StdPeriph_Lib_V3.5.0
 
 # list of source files
-SOURCES  = main.c stm32f10x_it.c
+SOURCES  = main.c stm32f10x_it.c utils.c
 SOURCES += $(STD_PERIPH_LIBS)/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/system_stm32f10x.c
 SOURCES += $(STD_PERIPH_LIBS)/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_adc.c
 SOURCES += $(STD_PERIPH_LIBS)/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_dma.c
