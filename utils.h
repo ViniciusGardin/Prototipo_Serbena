@@ -20,8 +20,8 @@
 #define ADC1_DR_Address    	((uint32_t)0x4001244C) 	
 
 enum {
-		RISE = 0,
-		FALL
+	RISE = 0,
+	FALL
 };
 
 void reset_AD9833();
@@ -31,9 +31,11 @@ void sleep_AD9833();
 void writeRegisterA( uint16_t command ) {
 void writeRegisterB( uint16_t command ) {
 
+void init_ADC(ADC_InitTypeDef* ADC_InitStruct);
+void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger);
+
 void init_Clock();	//Config do clock para tudo
 void init_GPIO();	//Pinos do processador
-void init_ADC();	//Conversor AD
 void init_DMA();	//Direct Memory Access
 void init_SPI();	//Comuicação com AD9833 e debuggar
 void init_NVIC();	//Interrupções

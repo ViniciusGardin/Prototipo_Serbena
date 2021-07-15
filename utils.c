@@ -2,7 +2,7 @@
 //    Autor: Vinicius Gardin Pires da Silva
 //    Pinos utilizados:
 //
-//    PA01 - ADC
+//    PA01 - ADC1
 //    PA05 - SPI1 SCK
 //    PA07 - SPI1 MOSI
 //    PB00 - FSYNC 1
@@ -210,13 +210,17 @@ void init_ADC(ADC_InitTypeDef* ADC_InitStruct) {
 }
 
 // externalTrigger tem que ser RISE ou FALL
-void adc_Trigger(int externalTrigger) {
-		if(externalTrigger == RISE) {
+void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger) {
+	if(externalTrigger == RISE) {
 
-		}
-		else {
+	}
+	else {
 
-		}
+	}
+	ADC_Init(ADC1, &ADC_InitStruct);
+	//ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
+	//ADC_DMACmd(ADC1, ENABLE);
+	//ADC_Cmd(ADC1, ENABLE);
 }
 
 	//Configuração do DMA1 para receber informações do
