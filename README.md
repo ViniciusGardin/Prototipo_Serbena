@@ -6,6 +6,18 @@ Programa desenvolvido durante a IC:
 
 Este é o microcontrolador utilizado, ele necessita da biblioteca STM32F10x_StdPeriph_Lib_V3.5.0, do compilador gcc-arm-none-eabi e do programador ST-link.
 
+stlink install (Arch)
+
+	$ sudo pacman -S stlink
+
+gcc-arm-none-eabi 
+	
+	https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm/downloads
+
+STM32F10x_StdPeriph_Lib_V3.5.0
+
+	https://www.st.com/en/embedded-software/stsw-stm32054.html
+
 ## Main
 
 No main é feito uma conversão ADC, cujo resultado é tranferido para memoria pelo DMA.
