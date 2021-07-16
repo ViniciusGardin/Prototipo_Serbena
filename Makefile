@@ -1,5 +1,5 @@
 # path to STM32F103 standard peripheral library
-STD_PERIPH_LIBS = /home/vini/Projetos/STM32/STM32F10x_StdPeriph_Lib_V3.5.0
+STD_PERIPH_LIBS = /home/vini/programs/STM32F10x_StdPeriph_Lib_V3.5.0
 
 # list of source files
 SOURCES  = main.c stm32f10x_it.c utils.c
