@@ -2,6 +2,7 @@
 //    Autor: Vinicius Gardin Pires da Silva
 //    Pinos utilizados:
 //
+//    PA00 - EXTI
 //    PA01 - ADC1
 //    PA05 - SPI1 SCK
 //    PA07 - SPI1 MOSI
@@ -30,6 +31,8 @@
 #include "utils.h"
 
 /*
+ * TODO: ADC Disc mode enable, AFIO?
+ *
  * TODO: ADC external trigger
  *
  * TODO: ADC change external trigger function
@@ -140,7 +143,8 @@ void init_Clock() {
 		      		RCC_APB2Periph_GPIOB |
 		      		RCC_APB2Periph_GPIOC |
 		      		RCC_APB2Periph_ADC1  |
-		      		RCC_APB2Periph_SPI1, ENABLE);
+		      		RCC_APB2Periph_SPI1  | 
+				    RCC_APB2Periph_AFIO,	ENABLE);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
@@ -190,11 +194,29 @@ void init_GPIO()
 	
 }
 
-void init_ADC(ADC_InitTypeDef* ADC_InitStruct) {
+void init_ADC() {
+
+	ADC_InitTypeDef ADC_InitStruct;
+	ADC_InitStruct.ADC_Mode = ADC_Mode_Independent;
+	ADC_InitStruct.ADC_ScanConvMode = DISABLE;
+	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
+	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_Ext_IT11_TIM8_TRGO;
+	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
+	ADC_InitStruct.ADC_NbrOfChannel = 1;
 	ADC_Init(ADC1, &ADC_InitStruct);
+
 	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
 	ADC_DMACmd(ADC1, ENABLE);
 	ADC_Cmd(ADC1, ENABLE);
+
+	/* Regular discontinuous mode channel number configuration */
+	ADC_DiscModeChannelCountConfig(ADC1, 1);
+	/* Enable regular discontinuous mode */
+	ADC_DiscModeCmd(ADC1, ENABLE);
+	
+	/* Enable ADC1 external trigger conversion */
+	ADC_ExternalTrigConvCmd(ADC1, ENABLE);
+
 
 	//Before starting a calibration, the ADC must have been in
 	//power-on state (ADON bit = ‘1’) for at least two ADC clock
@@ -210,22 +232,25 @@ void init_ADC(ADC_InitTypeDef* ADC_InitStruct) {
 }
 
 /*
- *  Muda o trigger do ADC entre RISE ou FALL
+ * External event on PA00 RISE or FALL
  *
- *  @param externalTrigger: RISE or FALL
  */
-void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger) {
-	if(externalTrigger == RISE) {
+void init_EXT( int externalTrigger ) {
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
 
-	}
-	else {
+	EXTI_InitTypeDef EXTI_InitStruct;
+	EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Event;
 
-	}
-	ADC_Init(ADC1, &ADC_InitStruct);
-	//ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
-	//ADC_DMACmd(ADC1, ENABLE);
-	//ADC_Cmd(ADC1, ENABLE);
+	if(externalTrigger == RISE)
+		EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising;
+	else
+		EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Falling;
+
+	EXTI_InitStruct.EXTI_Line = EXTI_Line0;
+	EXTI_InitStruct.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStruct);
 }
+
 
 /*
  * Configuração do DMA1 para receber informações do

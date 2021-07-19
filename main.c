@@ -14,19 +14,11 @@ int DMA_flag = 0;
 //void DMA_ClearITPendingBit(uint32_t DMAy_IT);
 
 int main(void) {
-	ADC_InitTypeDef ADC_InitStruct;
-	ADC_InitStruct.ADC_Mode = ADC_Mode_Independent;
-	ADC_InitStruct.ADC_ScanConvMode = DISABLE;
-	ADC_InitStruct.ADC_ContinuousConvMode = DISABLE;
-	ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
-	ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
-	ADC_InitStruct.ADC_NbrOfChannel = 1;
-
-	init_ADC(&ADC_InitStruct);
-
 	init_Clock();
 	init_GPIO();
+	init_ADC();
 	init_DMA();
+	init_EXT(RISE);
 	init_SPI();
 	init_NVIC();
 	init_AD9833(1000);

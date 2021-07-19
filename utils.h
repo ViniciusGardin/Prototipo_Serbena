@@ -31,11 +31,10 @@ void sleep_AD9833();
 void writeRegisterA( uint16_t command );
 void writeRegisterB( uint16_t command );
 
-void init_ADC(ADC_InitTypeDef* ADC_InitStruct);
-void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger);
-
 void init_Clock();	
 void init_GPIO();	
+void init_ADC();
+void init_EXT( int externalTrigger );
 void init_DMA();	
 void init_SPI();	
 void init_NVIC();	
