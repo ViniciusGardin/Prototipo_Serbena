@@ -147,8 +147,8 @@ void init_Clock() {
   	RCC_PCLK2Config(RCC_HCLK_Div2); 
 
 	/* RCC configuration STM librarie                            */
-  /* PCLK2 = HCLK/2 */
-  RCC_PCLK2Config(RCC_HCLK_Div2); 
+  	/* PCLK2 = HCLK/2 */
+	RCC_PCLK2Config(RCC_HCLK_Div2); 
 }
 
 void init_GPIO()
@@ -209,7 +209,11 @@ void init_ADC(ADC_InitTypeDef* ADC_InitStruct) {
   	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 }
 
-// externalTrigger tem que ser RISE ou FALL
+/*
+ *  Muda o trigger do ADC entre RISE ou FALL
+ *
+ *  @param externalTrigger: RISE or FALL
+ */
 void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger) {
 	if(externalTrigger == RISE) {
 
@@ -223,9 +227,12 @@ void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger) {
 	//ADC_Cmd(ADC1, ENABLE);
 }
 
-	//Configuração do DMA1 para receber informações do
-	//ADC 1 e enviar para &data, com um buffer de 1 no modo
-	//circular
+/*
+ * Configuração do DMA1 para receber informações do
+ * ADC 1 e enviar para &data, com um buffer de 1 no modo
+ * circular
+ *
+ */
 void init_DMA(){
 	DMA_InitTypeDef DMA_Initstruct;
 	DMA_Initstruct.DMA_PeripheralBaseAddr = ADC1_DR_Address; 
@@ -246,6 +253,12 @@ void init_DMA(){
 	//DMA Transfer complete
 	DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
 }
+
+/*
+ * Configura o SPI1 para ser o mestre com uma comunicação onde 
+ * só ele fala com dados de 16 bits e SS/FSYNC via hardware que
+ * no nosso caso é por GPIO
+ */
 void init_SPI() {
 	//Configura o SPI1 para comunicar com os AD9833.
 	SPI_InitTypeDef SPI_InitStruct;
@@ -262,7 +275,7 @@ void init_SPI() {
 
 	SPI_Cmd(SPI1, ENABLE);
 
-//Debuggar
+//SPI2 para Debuggar INCOMPLETO
 //	SPI_InitTypeDef SPI_InitStruct2;
 //
 //	SPI_InitStruct2.SPI_Direction = SPI_Direction_1Line_Tx;
@@ -279,7 +292,9 @@ void init_SPI() {
 //	SPI_Cmd(SPI2, ENABLE);
 }
 
-/* Configure and enable ADC interrupt */
+/* 
+ * Configure and enable DMA interrupt 
+ */
 void init_NVIC() {
   NVIC_InitTypeDef NVIC_InitStructure;
   NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;

@@ -28,17 +28,17 @@ void reset_AD9833();
 void init_AD9833(float frequency);
 void setFrequency(float frequency);
 void sleep_AD9833();
-void writeRegisterA( uint16_t command ) {
-void writeRegisterB( uint16_t command ) {
+void writeRegisterA( uint16_t command );
+void writeRegisterB( uint16_t command );
 
 void init_ADC(ADC_InitTypeDef* ADC_InitStruct);
 void adc_Trigger(ADC_InitTypeDef* ADC_InitStruct, int externalTrigger);
 
-void init_Clock();	//Config do clock para tudo
-void init_GPIO();	//Pinos do processador
-void init_DMA();	//Direct Memory Access
-void init_SPI();	//Comuicação com AD9833 e debuggar
-void init_NVIC();	//Interrupções
+void init_Clock();	
+void init_GPIO();	
+void init_DMA();	
+void init_SPI();	
+void init_NVIC();	
 void delay();
 
 #endif
