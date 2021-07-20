@@ -228,6 +228,10 @@ void init_ADC() {
   	while(ADC_GetResetCalibrationStatus(ADC1));
   	ADC_StartCalibration(ADC1);
   	while(ADC_GetCalibrationStatus(ADC1));
+}
+
+void startConvADC() {
+	ADC_Cmd(ADC1, ENABLE);
   	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 }
 
