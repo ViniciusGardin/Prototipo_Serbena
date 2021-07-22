@@ -1,3 +1,11 @@
+/*
+ * TODO: Fazer a calibração
+ *
+ * TODO: Fazer calculo do modulo
+ *
+ * TODO: Valor de res
+ */
+
 #include <stm32f10x.h>
 #include "stm32f10x_conf.h"
 #include "utils.h"
@@ -7,19 +15,23 @@ uint8_t DMA_flag = 0;		//Flag que a interrupção do DMA ativa
 uint8_t count = 0;		//Quantas vezes foi feita as mesmas medidas
 uint8_t wavePoint = 1;	//Ponto da onda senoidal estamos analisando
 
-long RealVar = 0;
-long ImagVar = 0;
-long Real[101] = {0};	//Todos os valores reais da impedancia
-long Imag[101] = {0};	//Todos os valores imaginarios da impedancia
-long Zfinal[101] = {0};	//Valores da impedancia no final
-double freqA[101] = {0};	//Valores da frequencia para cada ponto
-
-
 //frequencia inicial = 1 Hz
 //frequencia final   = 100k Hz
 
 const uint8_t npts = 101;	//numero de pontos = 101
 const uint8_t nptsA = 0;	//numero do ponto atual
+
+long RealVar = 0;
+long ImagVar = 0;
+long Real[npts] = {0};	//Todos os valores reais da impedancia
+long Imag[npts] = {0};	//Todos os valores imaginarios da impedancia
+long Zimag[npts] = {0};	//Valores da impedancia no final
+long Zreal[npts] = {0};	//Valores da impedancia no final
+double freqA[npts] = {0};	//Valores da frequencia para cada ponto
+
+long RealOpen[npts] = {1};
+long ImagOpen[npts] = {1};
+const uint16_t res = 1;
 
 //Para calcular o passo para cada frequencia, para que ele seja feito de uma
 //forma logaritma, é feito  seguinte calculo:
@@ -96,7 +108,11 @@ int main(void) {
 		nptsA++;
 		if(nptsA >= npts){//Aqui acabou 
 				for(int i = 0; i<npts; i++) {
-						Zfinal[i] = 
+						long var = Res/(power((Real[i]+RealOpen[i]),2)+power((Imag[i] + ImagOpen[i]),2));
+						Zimag[i] = Imag[i]*(Real[i]+RealOpen[i])-Real[i]*(Imag[i]+ImagOpen[i]);
+						Zimag[i] *= var;
+						Zimag[i] = Real[i]*(Real[i]+RealOpen[i])-Imag[i]*(Imag[i]+ImagOpen[i]);
+						Zreal[i] *= var;
 				}
 			ADC_Cmd(ADC1, DISABLE);
 			sleep_AD9833();
