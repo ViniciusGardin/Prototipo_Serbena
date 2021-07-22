@@ -24,6 +24,14 @@ enum {
 	FALL
 };
 
+//Funções que não sei se vou usar
+//void DMA_SetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx, uint16_t DataNumber); 
+//uint16_t DMA_GetCurrDataCounter(DMA_Channel_TypeDef* DMAy_Channelx);
+//FlagStatus DMA_GetFlagStatus(uint32_t DMAy_FLAG);
+//void DMA_ClearFlag(uint32_t DMAy_FLAG);
+//ITStatus DMA_GetITStatus(uint32_t DMAy_IT);
+//void DMA_ClearITPendingBit(uint32_t DMAy_IT);
+
 void reset_AD9833();
 void init_AD9833(float frequency);
 void setFrequency(float frequency);

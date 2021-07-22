@@ -140,7 +140,10 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 void DMA1_Channel1_IRQHandler() {
-	DMA_flag = 1;
+  	if(DMA_GetITStatus(DMA1_IT_TC1)) {
+		DMA_flag = 1;
+		DMA_ClearITPendingBit(DMA1_IT_TC1);
+	}
 }
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/

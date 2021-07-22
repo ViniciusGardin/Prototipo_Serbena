@@ -230,11 +230,6 @@ void init_ADC() {
   	while(ADC_GetCalibrationStatus(ADC1));
 }
 
-void startConvADC() {
-	ADC_Cmd(ADC1, ENABLE);
-  	ADC_SoftwareStartConvCmd(ADC1, ENABLE);
-}
-
 /*
  * External event on PA00 RISE or FALL
  *
