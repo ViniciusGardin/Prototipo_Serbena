@@ -1,11 +1,10 @@
 /*
  * TODO: Fazer a calibração
  *
- * TODO: Fazer calculo do modulo
- *
  * TODO: Valor de res
  */
 
+#include <math.h>//Raiz e power
 #include <stm32f10x.h>
 #include "stm32f10x_conf.h"
 #include "utils.h"
@@ -25,8 +24,7 @@ long RealVar = 0;
 long ImagVar = 0;
 long Real[npts] = {0};	//Todos os valores reais da impedancia
 long Imag[npts] = {0};	//Todos os valores imaginarios da impedancia
-long Zimag[npts] = {0};	//Valores da impedancia no final
-long Zreal[npts] = {0};	//Valores da impedancia no final
+long Zmodulo[npts] = {0};	//Valores da impedancia no final
 double freqA[npts] = {0};	//Valores da frequencia para cada ponto
 
 long RealOpen[npts] = {1};
@@ -109,10 +107,11 @@ int main(void) {
 		if(nptsA >= npts){//Aqui acabou 
 				for(int i = 0; i<npts; i++) {
 						long var = Res/(power((Real[i]+RealOpen[i]),2)+power((Imag[i] + ImagOpen[i]),2));
-						Zimag[i] = Imag[i]*(Real[i]+RealOpen[i])-Real[i]*(Imag[i]+ImagOpen[i]);
-						Zimag[i] *= var;
-						Zimag[i] = Real[i]*(Real[i]+RealOpen[i])-Imag[i]*(Imag[i]+ImagOpen[i]);
-						Zreal[i] *= var;
+						long Zimag = Imag[i]*(Real[i]+RealOpen[i])-Real[i]*(Imag[i]+ImagOpen[i]);
+						Zimag *= var;
+						long Zreal = Real[i]*(Real[i]+RealOpen[i])-Imag[i]*(Imag[i]+ImagOpen[i]);
+						Zreal *= var;
+						Zmodulo[i] = sqrt(pow(Zimag,2) + pow(Zreal,2));
 				}
 			ADC_Cmd(ADC1, DISABLE);
 			sleep_AD9833();
