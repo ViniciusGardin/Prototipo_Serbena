@@ -53,7 +53,7 @@ const uint16_t HFlim = 100000;
 int main(void) {
 	init_Clock();
 	init_GPIO();
-	init_ADC();
+	init_ADC(freq);
 	init_DMA();
 	init_NVIC();
 	init_SPI();
@@ -118,6 +118,7 @@ int main(void) {
 			while(1){__NOP();}
 		}
 		freq *= fincr;
+		if(freq)
 		freA[nptsA] = freq;
 		setFrequency(freq);
 		if(freq < LFlim)

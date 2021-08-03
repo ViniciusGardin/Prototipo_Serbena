@@ -1,0 +1,32 @@
+FreqADC = 12 MHz
+
+Number of cycles =  Sampling time + 12.5 cycles
+
+ADC_SampleTime_1.5  	= 1.5  +12.5 cycles 
+ADC_SampleTime_7.5  	= 7.5  +12.5 cycles 
+ADC_SampleTime_13.5 	= 13.5 +12.5 cycles 
+ADC_SampleTime_28.5 	= 28.5 +12.5 cycles 
+ADC_SampleTime_41.5 	= 41.5 +12.5 cycles 
+ADC_SampleTime_55.5 	= 55.5 +12.5 cycles 
+ADC_SampleTime_71.5 	= 71.5 +12.5 cycles 
+ADC_SampleTime_239.5	= 239.5+12.5 cycles 
+
+Tconv =  (1/FreqADC) * 14  = 1.16 us
+Tconv =  (1/FreqADC) * 20  = 1.66 us
+Tconv =  (1/FreqADC) * 26  = 2.16 us
+Tconv =  (1/FreqADC) * 41  = 3.41 us
+Tconv =  (1/FreqADC) * 54  = 4.5  us
+Tconv =  (1/FreqADC) * 68  = 5.66 us
+Tconv =  (1/FreqADC) * 84  = 7    us
+Tconv =  (1/FreqADC) * 252 = 21   us
+
+Tprocessamento = 1
+
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 115.74 kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 93.98  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 79.11  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 56.68  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 45.45  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 37.53  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 31.25  kHz
+FreqMax = 1/(4*(Tconv + Tprocessamento)) = 11.36  kHz

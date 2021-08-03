@@ -1,45 +1,7 @@
-//*********************** Prototipo Serbena **************************
-//    Autor: Vinicius Gardin Pires da Silva
-//    Pinos utilizados:
-//
-//    PA00 - EXTI
-//    PA01 - ADC1
-//    PA05 - SPI1 SCK
-//    PA07 - SPI1 MOSI
-//    PB00 - FSYNC 1
-//    PB01 - FSYNC 2
-//    PC13 - Led
-//
-//    Bibliotecas utilizadas:
-//
-//    stm32f10x.h		Biblioteca do STM32f10
-//    stm32f10x_adc.h 	Biblioteca do ADC
-//    stm32f10x_dma.h 	Biblioteca do DMA
-//    stm32f10x_rcc.h 	Biblioteca do clock
-//    stm32f10x_spi.h	Biblioteca do SPI
-//    stm32f10x_it.h  	Biblioteca do interrupções
-//
-//********************************************************************
-//    DATA      |	Descrição
-//********************************************************************
-// 28/06/2021   |	Conexão com github
-// 29/06/2021	|	Add LED
-// 08/07/2021	|	Add SPI
-// 13/07/2021   |   Add utils
-//--------------------------------------------------------------------
-
-#include "utils.h"
-
 /*
- * TODO: ADC Disc mode enable, AFIO?
+ * TODO: Revisar os tempos de conversão do ADC
  *
- * TODO: ADC external trigger
- *
- * TODO: ADC change external trigger function
- *
- * TODO: Phase correction Marlio codigo
- *
- * TODO: CPOL e CPHA do SPI estão certos?
+ * TODO: Mudança de frequencia do ADC conforme aumenta a frequencia
  *
  * TODO: Calcular corretamente o tempo da função delay
  *
@@ -48,6 +10,12 @@
  * TODO: SPI2 para debbugar
  *
  */
+
+#include "utils.h"
+
+//Utilizados para correção da fase
+extern const uint16_t HFavg = 128;
+extern const uint16_t LFlim = 20;
 
 /*******************************************************************/
 /*                     Funções do AD9833                           */
@@ -109,10 +77,15 @@ void setFrequency(float frequency) {
 	lower14 |= REG0;
 	upper14 |= REG0;   
 
+	
+	//Calculo para correção da fase
+	(frequency < LFlim) ? int LFcor = 1 : int LFcor = HFavg*7;
+  	uint16_t phas_corr = uint16_t(frequency / 256 * LFcor);   
+
   	writeRegisterB(FREQ_WRITE_CMD); 
-	writeRegisterB(lower14);			//Write lower 14 bits to AD9833
-	writeRegisterB(upper14);			//Write upper 14 bits to AD9833
-  	writeRegisterB(PHASE_WRITE_CMD);	//Phase = 0
+	writeRegisterB(lower14);					//Write lower 14 bits to AD9833
+	writeRegisterB(upper14);					//Write upper 14 bits to AD9833
+  	writeRegisterB(PHASE_WRITE_CMD + phas_corr);//Phase correction
 }
 
 void sleep_AD9833() {
@@ -147,8 +120,9 @@ void init_Clock() {
 				    RCC_APB2Periph_AFIO,	ENABLE);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+	//Aqui configura o ADC para 12MHz
+  	RCC_PCLK2Config(RCC_HCLK_Div1); 
   	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
-  	RCC_PCLK2Config(RCC_HCLK_Div2); 
 
 	/* RCC configuration STM librarie                            */
   	/* PCLK2 = HCLK/2 */
@@ -194,7 +168,7 @@ void init_GPIO()
 	
 }
 
-void init_ADC() {
+void init_ADC(double freq) {
 
 	ADC_InitTypeDef ADC_InitStruct;
 	ADC_InitStruct.ADC_Mode = ADC_Mode_Independent;
@@ -205,7 +179,7 @@ void init_ADC() {
 	ADC_InitStruct.ADC_NbrOfChannel = 1;
 	ADC_Init(ADC1, &ADC_InitStruct);
 
-	ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
+	sampleTime(freq);
 	ADC_DMACmd(ADC1, ENABLE);
 	ADC_Cmd(ADC1, ENABLE);
 
@@ -230,6 +204,51 @@ void init_ADC() {
   	while(ADC_GetCalibrationStatus(ADC1));
 }
 
+sampleTime(double freq) {
+//Relação de sampletime por frequencia maxima
+//ADC_SampleTime_1.5  	= 115.74 
+//ADC_SampleTime_7.5  	= 93.98  
+//ADC_SampleTime_13.5 	= 79.11  
+//ADC_SampleTime_28.5 	= 56.68  
+//ADC_SampleTime_41.5 	= 45.45  
+//ADC_SampleTime_55.5 	= 37.53  
+//ADC_SampleTime_71.5 	= 31.25  
+//ADC_SampleTime_239.5	= 11.36  
+
+
+	if(freq < 11360){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_239Cycles5);
+
+	}
+	else if(freq < 31250){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_71Cycles5);
+
+	}
+	else if(freq < 37530){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_55Cycles5);
+
+	}
+	else if(freq < 45450){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_41Cycles5);
+
+	}
+	else if(freq < 56680){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_28Cycles5);
+
+	}
+	else if(freq < 79110){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_13Cycles5);
+
+	}
+	else if(freq < 93980){
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_7Cycles5);
+
+	}
+	else{
+		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
+
+	}
+}
 /*
  * External event on PA00 RISE or FALL
  *
