@@ -1,12 +1,4 @@
 /*
- * TODO: Revisar os tempos de conversão do ADC
- *
- * TODO: Mudança de frequencia do ADC conforme aumenta a frequencia
- *
- * TODO: Calcular corretamente o tempo da função delay
- *
- * TODO: Verificar os delays nas funções do AD9833
- *
  * TODO: SPI2 para debbugar
  *
  */
@@ -16,6 +8,7 @@
 //Utilizados para correção da fase
 extern const uint16_t HFavg = 128;
 extern const uint16_t LFlim = 20;
+extern uint16_t data = 0;		//Valor de conversão do ADC
 
 /*******************************************************************/
 /*                     Funções do AD9833                           */
@@ -30,10 +23,10 @@ void reset_AD9833() {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
 
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    SPI_I2S_SendData(SP1, RESET_CMD);
+    SPI_I2S_SendData(SPI1, RESET_CMD);
 	delay(15);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    SPI_I2S_SendData(SP1, NORMAL_CMD);
+    SPI_I2S_SendData(SPI1, NORMAL_CMD);
 
 	GPIO_SetBits(GPIOB, GPIO_Pin_0);
 	GPIO_SetBits(GPIOB, GPIO_Pin_1);
@@ -46,15 +39,15 @@ void init_AD9833(float frequency) {
 	reset_AD9833();
 	writeRegisterA(SINE_WAVE);
 	writeRegisterB(SQUARE_WAVE);
-	SetFrequency(frequency);
+	setFrequency(frequency);
 }
 
 /*
  *  Set the specified frequency register with the frequency (in Hz)
  */
 void setFrequency(float frequency) {
-	if (frequency > 6e6)
-		frequency = 6e6;
+	if (frequency > 125e3)
+		frequency = 125e3;
 	if (frequency < 0.0) 
 		frequency = 0.0;
 	
@@ -77,10 +70,11 @@ void setFrequency(float frequency) {
 	lower14 |= REG0;
 	upper14 |= REG0;   
 
-	
 	//Calculo para correção da fase
-	(frequency < LFlim) ? int LFcor = 1 : int LFcor = HFavg*7;
-  	uint16_t phas_corr = uint16_t(frequency / 256 * LFcor);   
+	int LFcor = 1;
+	if (frequency > LFlim)
+				LFcor = HFavg*7;
+  	uint16_t phas_corr = (uint16_t)(frequency / 256 * LFcor);   
 
   	writeRegisterB(FREQ_WRITE_CMD); 
 	writeRegisterB(lower14);					//Write lower 14 bits to AD9833
@@ -96,14 +90,14 @@ void sleep_AD9833() {
 void writeRegisterA( uint16_t command ) {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_0);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    SPI_I2S_SendData(SP1, command);
+    SPI_I2S_SendData(SPI1, command);
 	GPIO_SetBits(GPIOB, GPIO_Pin_0);
 }
 
 void writeRegisterB( uint16_t command ) {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_1);
     while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    SPI_I2S_SendData(SP1, command);
+    SPI_I2S_SendData(SPI1, command);
 	GPIO_SetBits(GPIOB, GPIO_Pin_1);
 }
 
@@ -120,13 +114,16 @@ void init_Clock() {
 				    RCC_APB2Periph_AFIO,	ENABLE);
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-	//Aqui configura o ADC para 12MHz
-  	RCC_PCLK2Config(RCC_HCLK_Div1); 
-  	RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
+	//Considerando 56MHz = HCLK = PCLK2
+	RCC_ADCCLKConfig(RCC_PCLK2_Div4); 
 
-	/* RCC configuration STM librarie                            */
-  	/* PCLK2 = HCLK/2 */
-	RCC_PCLK2Config(RCC_HCLK_Div2); 
+	//#if defined (STM32F10X_LD_VL) || defined (STM32F10X_MD_VL) || defined (STM32F10X_HD_VL)
+	//  /* ADCCLK = PCLK2/2 */
+	//  RCC_ADCCLKConfig(RCC_PCLK2_Div2); 
+	//#else
+	//  /* ADCCLK = PCLK2/4 */
+	//  RCC_ADCCLKConfig(RCC_PCLK2_Div4); 
+	//#endif
 }
 
 void init_GPIO()
@@ -204,49 +201,44 @@ void init_ADC(double freq) {
   	while(ADC_GetCalibrationStatus(ADC1));
 }
 
-sampleTime(double freq) {
-//Relação de sampletime por frequencia maxima
-//ADC_SampleTime_1.5  	= 115.74 
-//ADC_SampleTime_7.5  	= 93.98  
-//ADC_SampleTime_13.5 	= 79.11  
-//ADC_SampleTime_28.5 	= 56.68  
-//ADC_SampleTime_41.5 	= 45.45  
-//ADC_SampleTime_55.5 	= 37.53  
-//ADC_SampleTime_71.5 	= 31.25  
-//ADC_SampleTime_239.5	= 11.36  
+/*
+ * Sampletime altera o numero de ciclos utilizados para fazer a amostra da
+ *  tensão, quanto maior, maior o tempo e a qualidade da conversão. Quanto
+ *  maior a frequencia mais é diminuido os ciclos de amostra.
+ */
 
+void sampleTime(double freq) {
 
-	if(freq < 11360){
+	if(freq < 13157){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_239Cycles5);
 
 	}
-	else if(freq < 31250){
+	else if(freq < 35714){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_71Cycles5);
 
 	}
-	else if(freq < 37530){
+	else if(freq < 42682){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_55Cycles5);
 
 	}
-	else if(freq < 45450){
+	else if(freq < 51470){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_41Cycles5);
 
 	}
-	else if(freq < 56680){
+	else if(freq < 63636){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_28Cycles5);
 
 	}
-	else if(freq < 79110){
+	else if(freq < 87500){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_13Cycles5);
 
 	}
-	else if(freq < 93980){
+	else if(freq < 102940){
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_7Cycles5);
 
 	}
 	else{
 		ADC_RegularChannelConfig(ADC1, ADC_Channel_1, 1, ADC_SampleTime_1Cycles5);
-
 	}
 }
 /*
@@ -306,7 +298,7 @@ void init_SPI() {
 	//Configura o SPI1 para comunicar com os AD9833.
 	SPI_InitTypeDef SPI_InitStruct;
 	SPI_InitStruct.SPI_Direction = SPI_Direction_1Line_Tx;
-	SPI_InitStruct.SPI_Mode = SPI_Mode_Master
+	SPI_InitStruct.SPI_Mode = SPI_Mode_Master;
 	SPI_InitStruct.SPI_DataSize = SPI_DataSize_16b;
 	SPI_InitStruct.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStruct.SPI_CPHA = SPI_CPHA_1Edge;
@@ -347,6 +339,10 @@ void init_NVIC() {
   NVIC_Init(&NVIC_InitStructure);
 }
 
-void delay() {
-	for(long i = 0; i<SystemCoreClock/30; i++){__NOP();}
+//Considerando que __NOP é um tique do clock, com SystemCoreClock em MHz, 
+//se dividirmos ele por 1000 será o fim do for(j) a cada 1ms
+void delay(int milisec) {
+	for (int i = 0; i < milisec; i++) {
+		for(long j = 0; j<SystemCoreClock/1000; j++){__NOP();}		
+	}
 }

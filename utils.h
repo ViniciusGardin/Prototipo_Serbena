@@ -72,10 +72,11 @@ void writeRegisterB( uint16_t command );
 void init_Clock();	
 void init_GPIO();	
 void init_ADC();
+void sampleTime(double freq);
 void init_EXT( int externalTrigger );
 void init_DMA();	
 void init_SPI();	
 void init_NVIC();	
-void delay();
+void delay(int milisec);
 
 #endif
