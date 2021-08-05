@@ -9,6 +9,7 @@
  */
 
 #include <math.h>//Raiz e power
+
 #include <stm32f10x.h>
 #include "stm32f10x_conf.h"
 #include "utils.h"
