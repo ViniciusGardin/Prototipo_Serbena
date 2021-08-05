@@ -6,9 +6,9 @@
 #include "utils.h"
 
 //Utilizados para correção da fase
-extern const uint16_t HFavg = 128;
-extern const uint16_t LFlim = 20;
-extern uint16_t data = 0;		//Valor de conversão do ADC
+extern const uint16_t HFavg;
+extern const uint16_t LFlim;
+extern uint16_t data;		//Valor de conversão do ADC
 
 /*******************************************************************/
 /*                     Funções do AD9833                           */
