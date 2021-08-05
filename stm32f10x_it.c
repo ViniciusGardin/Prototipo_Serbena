@@ -25,22 +25,6 @@
 #include "stm32f10x_it.h"
 
 extern int DMA_flag;
-/** @addtogroup STM32F10x_StdPeriph_Examples
-  * @{
-  */
-
-/** @addtogroup ADC_3ADCs_DMA
-  * @{
-  */ 
-
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-__IO uint16_t ADC2ConvertedValue;
-
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
 
 /******************************************************************************/
 /*            Cortex-M3 Processor Exceptions Handlers                         */
@@ -147,6 +131,12 @@ void SysTick_Handler(void)
 /*            STM32F10x Peripherals Interrupt Handlers                        */
 /******************************************************************************/
  
+void DMA1_Channel1_IRQHandler() {
+  	if(DMA_GetITStatus(DMA1_IT_TC1)) {
+		DMA_flag = 1;
+		DMA_ClearITPendingBit(DMA1_IT_TC1);
+	}
+}
 
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */
@@ -154,9 +144,5 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
-
-void DMA1_Channel1_IRQHandler() {
-	DMA_flag = 1;
-}
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
