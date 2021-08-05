@@ -41,7 +41,7 @@ all: $(PROJECT).elf
 
 # compile
 $(PROJECT).elf: $(SOURCES)
-	$(CC) $(CFLAGS) $^ $^ -lm -lc -lnosys-o $@
+	$(CC) $(CFLAGS) $^ -lm -lc -lnosys -o $@
 	$(OBJCOPY) -O ihex $(PROJECT).elf $(PROJECT).hex
 	$(OBJCOPY) -O binary $(PROJECT).elf $(PROJECT).bin
 

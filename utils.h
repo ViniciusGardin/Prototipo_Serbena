@@ -1,5 +1,6 @@
 //*********************** Prototipo Serbena **************************
 //    Autor: Vinicius Gardin Pires da Silva
+//********************************************************************
 //    Pinos utilizados:
 //
 //    PA00 - EXTI
@@ -10,6 +11,7 @@
 //    PB01 - FSYNC 2
 //    PC13 - Led
 //
+//********************************************************************
 //    Bibliotecas utilizadas:
 //
 //    stm32f10x.h		Biblioteca do STM32f10
@@ -17,21 +19,15 @@
 //    stm32f10x_dma.h 	Biblioteca do DMA
 //    stm32f10x_rcc.h 	Biblioteca do clock
 //    stm32f10x_spi.h	Biblioteca do SPI
+//    stm32f10x_exti.h	Biblioteca do External Interrupt
 //    stm32f10x_it.h  	Biblioteca do interrupções
 //
-//********************************************************************
-//    DATA      |	Descrição
-//********************************************************************
-// 28/06/2021   |	Conexão com github
-// 29/06/2021	|	Add LED
-// 08/07/2021	|	Add SPI
-// 13/07/2021   |   Add utils
 //--------------------------------------------------------------------
 
 #ifndef __UTILS_H
 #define __UTILS_H
 
-#include <stm32f10x.h>
+#include "stm32f10x.h"
 #include "stm32f10x_conf.h"
 
 //Comandos para o AD9833

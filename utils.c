@@ -8,15 +8,19 @@
 //Utilizados para correção da fase
 extern const uint16_t HFavg;
 extern const uint16_t LFlim;
-extern uint16_t data;		//Valor de conversão do ADC
+
+//Valor de conversão do ADC
+extern uint16_t data;		
 
 /*******************************************************************/
 /*                     Funções do AD9833                           */
 /*******************************************************************/
 
 /*
- * Recomendação do manual é resetar sempre ao ligar. Ao resetar ele
- * não altera os valores de frequencia e fase
+ * Utilizado para resetar o AD9833 ao ligar (recomendação do manual) 
+ * e ao mudar a frequencia dos dois AD9833, para que assim eles 
+ * estejam sincronizados. Ao resetar ele não altera os valores de
+ * frequencia e fase.
  */
 void reset_AD9833() {
 	GPIO_ResetBits(GPIOB, GPIO_Pin_0);
@@ -33,7 +37,7 @@ void reset_AD9833() {
 }
 
 /*
- * Setup and apply a signal, frequency in Hz
+ * Inicia o AD9833. Frequency in Hz
  */
 void init_AD9833(float frequency) {
 	reset_AD9833();

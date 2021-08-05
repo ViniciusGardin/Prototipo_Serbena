@@ -29,6 +29,7 @@ STM32F10x_StdPeriph_Lib_V3.5.0
 
 ### stm32f10x_conf stm32f10x_it
    Respectivamente esses dois arquivos são a inclusão de todas as bibliotecas necessarias do stm32f10x e as funções de interrupção. Mesmo que esses dois arquivos poderiam não existir, eu decidi mante-los já que é a forma padrão da utilização da biblioteca stm32f10x.
+   Em stm43f10x_it existem varias funções de utilização do sistema que vem como padrão, o que é realmente utilizado esta no fim do arquivo.
 
 ### Makefile
    É utilizado para compilar e carregar o codigo no microcontrolador utilizando gcc-arm e o stlink.

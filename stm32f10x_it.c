@@ -131,6 +131,12 @@ void SysTick_Handler(void)
 /*            STM32F10x Peripherals Interrupt Handlers                        */
 /******************************************************************************/
  
+void DMA1_Channel1_IRQHandler() {
+  	if(DMA_GetITStatus(DMA1_IT_TC1)) {
+		DMA_flag = 1;
+		DMA_ClearITPendingBit(DMA1_IT_TC1);
+	}
+}
 
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */
@@ -138,12 +144,5 @@ void SysTick_Handler(void)
 /*  available peripheral interrupt handler's name please refer to the startup */
 /*  file (startup_stm32f10x_xx.s).                                            */
 /******************************************************************************/
-
-void DMA1_Channel1_IRQHandler() {
-  	if(DMA_GetITStatus(DMA1_IT_TC1)) {
-		DMA_flag = 1;
-		DMA_ClearITPendingBit(DMA1_IT_TC1);
-	}
-}
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
