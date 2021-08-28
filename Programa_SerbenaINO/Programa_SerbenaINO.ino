@@ -1,4 +1,6 @@
  /*
+ * TODO: Alerta externo!!!! 
+ *
  * TODO: Fazer verificação no sysclock
  *
  * TODO: Fazer a calibração
@@ -14,13 +16,19 @@
  * MOSI    <-->  PA7 <-->  BOARD_SPI1_MOSI_PIN
  */
 
+//A frequencia maxima para esse programa é 125kHz
+//frequencia inicial = 1 Hz
+//frequencia final   = 100k Hz
+
 #include <math.h>//Raiz e power
-#include <SPI.h>
+#include <SPI.h>//Comunicação com AD
 #include <STM32ADC.h>
 
+/*******************************************************************/
+/*                         Variaveis                               */
+/*******************************************************************/
 #define SPI1_FSYNCA_PIN PB0
 #define SPI1_FSYNCB_PIN PB1
-uint8 adc_pin = PA0; 
 
 //Comandos para o AD9833
 #define SINE_WAVE         0x2000
@@ -50,14 +58,9 @@ void setFrequency(float frequency);
 void sleep_AD9833();
 void writeRegisterA( uint16_t command );
 void writeRegisterB( uint16_t command );
+static void DMA_Interrupt();
 
-//A frequencia maxima para esse programa é 125kHz
-//frequencia inicial = 1 Hz
-//frequencia final   = 100k Hz
-
-static void DMA_Interrupt() {
-  DMA_flag = 1;
-}
+uint8_t adc_pin = PA0;//Para usa o endenreço de PA0
 
 uint16_t data = 0;    //Valor de conversão do ADC
 uint8_t DMA_flag = 0; //Flag que a interrupção do DMA ativa
@@ -85,14 +88,12 @@ const uint16_t res = 1;//Resistencia fixa
 //10^((log10(freqF) - log10(freqI))/n° pts)
 //frequence increase =  power(10,(log10(100000/1)/101))
 float fincr = 1.12074;
-
 double freq  = 1;//Variavel da frequencia já com o seu valor inicial
 
 //É feito uma media entre os valores obtidos para cada frequencia, entretanto
 //para frequencia pequenas (LFavg Low Frequency average) demora muito fazer 
 //muitas medidas pelo periodo ser maior, logo ele só começa a fazer as HFavg
 //(High Frequency average) depois do LFlim (Low Frequency limit)
-
 const uint16_t HFavg = 128;
 const uint16_t LFavg = HFavg >> 2;//*
 uint16_t avg = LFavg;
@@ -101,37 +102,42 @@ const uint32_t HFlim = 100000;
 //* O operador ">>" é igual a dividir por 2^(numero usado no operador)
 
 
-  STM32ADC myAdc(ADC1);
-void setup() {
-  Serial.print("Setup...");
-  /* Configure SPI1 ------------------------------------------------------------------*/
-  SPI.begin(); //Initialize the SPI_1 port.
-  SPI.setBitOrder(MSBFIRST); // Set the SPI_1 bit order
-  SPI.setDataMode(SPI_MODE0); //Set the  SPI_2 data mode 0
-  SPI.setClockDivider(SPI_CLOCK_DIV16);      // Slow speed (72 / 16 = 4.5 MHz SPI_1 speed)
-  pinMode(SPI1_FSYNCA_PIN, OUTPUT);
-  pinMode(SPI1_FSYNCB_PIN, OUTPUT);
-  
-  /* Configure ADC1 ------------------------------------------------------------------*/
-  sampleTime(freq);
-  myADC.setPins(&adc_pin, 1);
-  myADC.setTrigger(ADC_EXT_EV_EXTI11);
-  
-  
-  //set the DMA transfer for the ADC. 
-  //in this case we want to increment the memory side and run it in circular mode
-  //By doing this, we can read the last value sampled from the channels by reading the dataPoints array
-  myADC.setDMA(data, 1,DMA_CIRC_MODE, NULL);
-  myADC.attachDMAInterrupt(&DMA_Interrupt);
-  myADC.calibrate();
-  myADC.startConversion();   
-  
-  
-  Serial.begin(115200); 
+/*******************************************************************/
+/*                          void setup                             */
+/*******************************************************************/
 
-  Serial.println("done.");
+STM32ADC myAdc(ADC1);
+
+void setup() {
+	while (!Serial); delay(10);
+	Serial.print("Setup...");
+	/* Configure SPI1 ------------------------------------------------------------------*/
+	SPI.begin(); //Initialize the SPI_1 port.
+	SPI.setBitOrder(MSBFIRST); // Set the SPI_1 bit order
+	SPI.setDataMode(SPI_MODE0); //Set the  SPI_2 data mode 0
+	SPI.setClockDivider(SPI_CLOCK_DIV16);      // Slow speed (72 / 16 = 4.5 MHz SPI_1 speed)
+	pinMode(SPI1_FSYNCA_PIN, OUTPUT);
+	pinMode(SPI1_FSYNCB_PIN, OUTPUT);
+	
+	/* Configure ADC1 ------------------------------------------------------------------*/
+	myADC.setPins(&adc_pin, 1);
+	sampleTime(freq);
+	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), DMA_Interrupt);
+	myADC.calibrate();
+
+	myADC.setTrigger(ADC_EXT_EV_EXTI11);
+	myADC.startConversion();   
+	
+	
+	Serial.begin(115200); 
+	
+	Serial.println("done.");
 }
 
+/*******************************************************************/
+/*                         void loop                               */
+/*******************************************************************/
+ 
 void loop() {
   //É iniciado os valores de cada vetor
   freqA[nptsA] = freq;
@@ -471,4 +477,8 @@ void init_NVIC() {
   NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
   NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
   NVIC_Init(&NVIC_InitStructure);
+}
+
+static void DMA_Interrupt() {
+  DMA_flag = 1;
 }
