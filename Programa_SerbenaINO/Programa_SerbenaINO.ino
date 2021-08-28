@@ -58,7 +58,8 @@ void setFrequency(float frequency);
 void sleep_AD9833();
 void writeRegisterA( uint16_t command );
 void writeRegisterB( uint16_t command );
-static void DMA_Interrupt();
+void exti_Interrupt() {
+void dma_Interrupt();
 
 uint8_t adc_pin = PA0;//Para usa o endenreço de PA0
 
@@ -106,7 +107,7 @@ const uint32_t HFlim = 100000;
 /*                          void setup                             */
 /*******************************************************************/
 
-STM32ADC myAdc(ADC1);
+STM32ADC myADC(ADC1);
 
 void setup() {
 	while (!Serial); delay(10);
@@ -124,9 +125,8 @@ void setup() {
 	sampleTime(freq);
 	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), DMA_Interrupt);
 	myADC.calibrate();
+	init_EXT(FALL);
 
-	myADC.setTrigger(ADC_EXT_EV_EXTI11);
-	myADC.startConversion();   
 	
 	
 	Serial.begin(115200); 
@@ -334,50 +334,6 @@ void init_Clock() {
   //#endif
 }
 
-void init_GPIO()
-{
-  /* Configure ADC pin ---------------------------------------------*/
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-  /* Configure SPI1 pins: SCK e MOSI -------------------------------*/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_7;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-  GPIO_Init(GPIOA, &GPIO_InitStructure);  
-
-  /* Configure SPI1 pins: FSYNC1 e FSYNC2 --------------------------*/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_Init(GPIOB, &GPIO_InitStructure);  
-
-  /* Configure LED builtin pin -------------------------------------*/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-
-//SPI2 para debbugar INCOMPLETO
-//  /* Configure SPI2 pins: SCK e MOSI -------------------------------*/
-//  GPIO_InitTypeDef GPIO_InitStructure3;
-//  GPIO_InitStructure3.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-//  GPIO_InitStructure3.GPIO_Speed = GPIO_Speed_50MHz;
-//  GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_PP;
-//  GPIO_Init(GPIOA, &GPIO_InitStructure3); 
-//  /* Configure SPI2 pin: SS ---------------------------------------*/
-//  GPIO_InitTypeDef GPIO_InitStructure3;
-//  GPIO_InitStructure3.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
-//  GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_Out_PP;
-//  GPIO_InitStructure3.GPIO_Mode = GPIO_Mode_AF_PP;
-//  GPIO_Init(GPIOA, &GPIO_InitStructure3); 
-  
-}
-
-void init_ADC(double freq) {
-
-
-}
-
 /*
  * Sampletime altera o numero de ciclos utilizados para fazer a amostra da
  *  tensão, quanto maior, maior o tempo e a qualidade da conversão. Quanto
@@ -418,67 +374,17 @@ void sampleTime(double freq) {
  *
  */
 void init_EXT( int externalTrigger ) {
-  GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource0);
-
-  EXTI_InitTypeDef EXTI_InitStruct;
-  EXTI_InitStruct.EXTI_Mode = EXTI_Mode_Event;
-
-  if(externalTrigger == RISE)
-    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Rising;
-  else
-    EXTI_InitStruct.EXTI_Trigger = EXTI_Trigger_Falling;
-
-  EXTI_InitStruct.EXTI_Line = EXTI_Line0;
-  EXTI_InitStruct.EXTI_LineCmd = ENABLE;
-  EXTI_Init(&EXTI_InitStruct);
+	if(externalTrigger == RISE)
+		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_RISING);
+	else
+		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_FALLING);
+	return;
 }
 
-
-/*
- * Configuração do DMA1 para receber informações do
- * ADC 1 e enviar para &data, com um buffer de 1 no modo
- * circular
- *
- */
-void init_DMA(){
-  DMA_InitTypeDef DMA_Initstruct;
-  DMA_Initstruct.DMA_PeripheralBaseAddr = ADC1_DR_Address; 
-  DMA_Initstruct.DMA_MemoryBaseAddr = (uint32_t)&data;    
-  DMA_Initstruct.DMA_DIR = DMA_DIR_PeripheralSRC; 
-  DMA_Initstruct.DMA_BufferSize = 1; 
-  DMA_Initstruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-  DMA_Initstruct.DMA_MemoryInc = DMA_MemoryInc_Disable; 
-  DMA_Initstruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_HalfWord;
-  DMA_Initstruct.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;
-  DMA_Initstruct.DMA_Mode = DMA_Mode_Circular;
-  DMA_Initstruct.DMA_Priority = DMA_Priority_High;
-  DMA_Initstruct.DMA_M2M = DMA_M2M_Disable;
-  DMA_Init(DMA1_Channel1, &DMA_Initstruct);
-
-  DMA_Cmd(DMA1_Channel1,ENABLE);
-
-  //DMA Transfer complete
-  DMA_ITConfig(DMA1_Channel1, DMA_IT_TC, ENABLE);
+void exti_Interrupt() {
+	myADC.startConversion();
+	return;
 }
-
-/*
- * Configura o SPI1 para ser o mestre com uma comunicação onde 
- * só ele fala com dados de 16 bits e SS/FSYNC via hardware que
- * no nosso caso é por GPIO
- */
-
-/* 
- * Configure and enable DMA interrupt 
- */
-void init_NVIC() {
-  NVIC_InitTypeDef NVIC_InitStructure;
-  NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel1_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
-}
-
-static void DMA_Interrupt() {
+void dma_Interrupt() {
   DMA_flag = 1;
 }
