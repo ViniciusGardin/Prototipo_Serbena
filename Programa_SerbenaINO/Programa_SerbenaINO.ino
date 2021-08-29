@@ -1,5 +1,7 @@
  /*
- * TODO: Alerta externo!!!! 
+ * TODO: EXTI!!!! 
+ *
+ * TODO: RCC
  *
  * TODO: Fazer verificação no sysclock
  *
@@ -9,11 +11,13 @@
  *
  * TODO: Desligar todos os perifericos no fim
  * 
- * FSYNCA  <-->  PB0 <-->  BOARD_SPI1_FSYNCA_PIN
- * FSYNCB  <-->  PB1 <-->  BOARD_SPI1_FSYNCB_PIN
- * SCK     <-->  PA5 <-->  BOARD_SPI1_SCK_PIN
- * MISO    <-->  PA6 <-->  BOARD_SPI1_MISO_PIN
- * MOSI    <-->  PA7 <-->  BOARD_SPI1_MOSI_PIN
+		 * ADC1    <-->  PA0 
+ * EXTI    <-->  PA1 
+ * FSYNCA  <-->  PB0 
+ * FSYNCB  <-->  PB1 
+ * SCK     <-->  PA5 
+ * MISO    <-->  PA6 
+ * MOSI    <-->  PA7 
  */
 
 //A frequencia maxima para esse programa é 125kHz
@@ -62,6 +66,7 @@ void exti_Interrupt() {
 void dma_Interrupt();
 
 uint8_t adc_pin = PA0;//Para usa o endenreço de PA0
+uint8_t adc_enable = 0;//Para usa o endenreço de PA0
 
 uint16_t data = 0;    //Valor de conversão do ADC
 uint8_t DMA_flag = 0; //Flag que a interrupção do DMA ativa
@@ -112,6 +117,7 @@ STM32ADC myADC(ADC1);
 void setup() {
 	while (!Serial); delay(10);
 	Serial.print("Setup...");
+
 	/* Configure SPI1 ------------------------------------------------------------------*/
 	SPI.begin(); //Initialize the SPI_1 port.
 	SPI.setBitOrder(MSBFIRST); // Set the SPI_1 bit order
@@ -123,7 +129,7 @@ void setup() {
 	/* Configure ADC1 ------------------------------------------------------------------*/
 	myADC.setPins(&adc_pin, 1);
 	sampleTime(freq);
-	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), DMA_Interrupt);
+	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), dma_Interrupt);
 	myADC.calibrate();
 	init_EXT(FALL);
 
@@ -145,6 +151,7 @@ void loop() {
       Real[i] = 0;
       Imag[i] = 0;
   }
+	adc_enable = 1;
    while(1) {
     while(count < avg){
       while(1) {
@@ -186,22 +193,32 @@ void loop() {
       DMA_flag = 0;
       count++;
     }//End of while(count < avg)
-    ADC_Cmd(ADC1, DISABLE);
+	adc_enable = 0;
+	Serial.print("Frequencia: ");
+	Serial.print(freq);
+	Serial.print("\tTensão real: ");
+	Serial.print(Real[nptsA]);
+	Serial.print("\tTensão Imaginaria: ");
+	Serial.println(Imag[nptsA]);
     count = 0;
     nptsA++;
-    if(nptsA >= NPTS){//Aqui acabou 
-      sleep_AD9833();
-      //Calculo da impedancia para cada frequencia
-      for(int i = 0; i<NPTS; i++) {
-        long var = res/(pow((Real[i]+RealOpen[i]),2)+pow((Imag[i] + ImagOpen[i]),2));
-        long Zimag = Imag[i]*(Real[i]+RealOpen[i])-Real[i]*(Imag[i]+ImagOpen[i]);
-        Zimag *= var;
-        long Zreal = Real[i]*(Real[i]+RealOpen[i])-Imag[i]*(Imag[i]+ImagOpen[i]);
-        Zreal *= var;
-        Zmodulo[i] = sqrt(pow(Zimag,2) + pow(Zreal,2));
-      }
-      GPIO_SetBits(GPIOC, GPIO_Pin_13);//Liga o Led builtin
-      while(1){__NOP();}
+	if(nptsA >= NPTS){//Aqui acabou 
+    	sleep_AD9833();
+      	//Calculo da impedancia para cada frequencia
+		for(int i = 0; i<NPTS; i++) {
+			long var = res/(pow((Real[i]+RealOpen[i]),2)+pow((Imag[i] + ImagOpen[i]),2));
+			long Zimag = Imag[i]*(Real[i]+RealOpen[i])-Real[i]*(Imag[i]+ImagOpen[i]);
+			Zimag *= var;
+			long Zreal = Real[i]*(Real[i]+RealOpen[i])-Imag[i]*(Imag[i]+ImagOpen[i]);
+			Zreal *= var;
+			Zmodulo[i] = sqrt(pow(Zimag,2) + pow(Zreal,2));
+			
+			Serial.print("Frequencia: ");
+			Serial.print(freqA[i]);
+			Serial.print("\tImpedancia: ");
+			Serial.println(Zmodulo[i]);
+      	}
+      	while(1){__nop();}
     }
     freq *= fincr;
     freqA[nptsA] = freq;
@@ -212,7 +229,7 @@ void loop() {
     else
       avg = HFavg;
     init_EXT(FALL);
-    ADC_Cmd(ADC1, ENABLE);
+	adc_enable = 1;
     reset_AD9833();
   }//End of while(1)
 }//End of main
@@ -253,40 +270,40 @@ void init_AD9833(float frequency) {
  *  Set the specified frequency register with the frequency (in Hz)
  */
 void setFrequency(float frequency) {
-  if (frequency > 125e3)
-    frequency = 125e3;
-  if (frequency < 0.0) 
-    frequency = 0.0;
-  
-  uint32_t freqWord = (uint32_t)(frequency * 10.73741824);
-  uint16_t upper14 = (uint16_t)((freqWord & 0xFFFC000) >> 14), 
-  lower14 = (uint16_t)(freqWord & 0x3FFF);
+	if(frequency > 125e3)
+  		frequency = 125e3;
+  	if(frequency < 0.0) 
+  		frequency = 0.0;
+  	
+  	uint32_t freqWord = (uint32_t)(frequency * 10.73741824);
+  	uint16_t upper14 = (uint16_t)((freqWord & 0xFFFC000) >> 14), 
+  	lower14 = (uint16_t)(freqWord & 0x3FFF);
 
-  lower14 |= REG0;
-  upper14 |= REG0;   
+  	lower14 |= REG0;
+  	upper14 |= REG0;   
 
-  writeRegisterA(FREQ_WRITE_CMD); 
-  writeRegisterA(lower14);      //Write lower 14 bits to AD9833
-  writeRegisterA(upper14);      //Write upper 14 bits to AD9833
-  writeRegisterA(PHASE_WRITE_CMD);  //Phase = 0
+  	writeRegisterA(FREQ_WRITE_CMD); 
+  	writeRegisterA(lower14);      //Write lower 14 bits to AD9833
+  	writeRegisterA(upper14);      //Write upper 14 bits to AD9833
+  	writeRegisterA(PHASE_WRITE_CMD);  //Phase = 0
 
-  freqWord = (uint32_t)(2*frequency * 10.73741824);
-  upper14 = (int16_t)((freqWord & 0xFFFC000) >> 14);
-  lower14 = (int16_t)(freqWord & 0x3FFF);
+  	freqWord = (uint32_t)(2*frequency * 10.73741824);
+  	upper14 = (int16_t)((freqWord & 0xFFFC000) >> 14);
+  	lower14 = (int16_t)(freqWord & 0x3FFF);
 
-  lower14 |= REG0;
-  upper14 |= REG0;   
+  	lower14 |= REG0;
+  	upper14 |= REG0;   
 
-  //Calculo para correção da fase
-  int LFcor = 1;
-  if (frequency > LFlim)
-    LFcor = HFavg*7;
-  uint16_t phas_corr = (uint16_t)(frequency / 256 * LFcor);   
+  	//Calculo para correção da fase
+  	int LFcor = 1;
+  	if (frequency > LFlim)
+  	  LFcor = HFavg*7;
+  	uint16_t phas_corr = (uint16_t)(frequency / 256 * LFcor);   
 
-  writeRegisterB(FREQ_WRITE_CMD); 
-  writeRegisterB(lower14);          //Write lower 14 bits to AD9833
-  writeRegisterB(upper14);          //Write upper 14 bits to AD9833
-  writeRegisterB(PHASE_WRITE_CMD + phas_corr);//Phase correction
+  	writeRegisterB(FREQ_WRITE_CMD); 
+  	writeRegisterB(lower14);          //Write lower 14 bits to AD9833
+  	writeRegisterB(upper14);          //Write upper 14 bits to AD9833
+  	writeRegisterB(PHASE_WRITE_CMD + phas_corr);//Phase correction
 }
 
 void sleep_AD9833() {
@@ -296,16 +313,12 @@ void sleep_AD9833() {
 
 void writeRegisterA( uint16_t command ) {
   digitalWrite(SPI1_FSYNCA_PIN, LOW);
-    //while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    //SPI_I2S_SendData(SPI1, command);
   SPI.transfer(command);
   digitalWrite(SPI1_FSYNCA_PIN, HIGH);
 }
 
 void writeRegisterB( uint16_t command ) {
  digitalWrite(SPI1_FSYNCB_PIN, LOW);
-    //while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET);
-    //SPI_I2S_SendData(SPI1, command);
   SPI.transfer(command);
   digitalWrite(SPI1_FSYNCB_PIN, HIGH);
 }
@@ -378,12 +391,12 @@ void init_EXT( int externalTrigger ) {
 		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_RISING);
 	else
 		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_FALLING);
-	return;
 }
 
 void exti_Interrupt() {
-	myADC.startConversion();
-	return;
+	if(adc_enable) {
+		myADC.startConversion();
+	}
 }
 void dma_Interrupt() {
   DMA_flag = 1;
