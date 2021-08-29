@@ -11,7 +11,7 @@
  *
  * TODO: Desligar todos os perifericos no fim
  * 
-		 * ADC1    <-->  PA0 
+ * ADC1    <-->  PA0 
  * EXTI    <-->  PA1 
  * FSYNCA  <-->  PB0 
  * FSYNCB  <-->  PB1 
