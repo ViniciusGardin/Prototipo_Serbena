@@ -45,7 +45,7 @@
 #define NPTS 101  //numero de pontos = 101
 
 uint8_t adc_pin = PA0;	//Para usa o endenreço de PA0
-uint8_t adc_enable = 0;	//Para usa o endenreço de PA0
+uint8_t ADC_flag = 0;	//Para usa o endenreço de PA0
 uint8_t DMA_flag = 0; 	//Flag que a interrupção do DMA ativa
 uint8_t count = 0;    	//Quantas vezes foi feita as mesmas medidas
 uint8_t wavePoint = 1;  //Ponto da onda senoidal estamos analisando
@@ -99,7 +99,7 @@ void sleep_AD9833();
 void writeRegisterA(uint16_t command);
 void writeRegisterB(uint16_t command);
 
-void sampleTime(double freq);
+adc_smp_rate sampleTime(double freq);
 void init_EXT(int externalTrigger);
 void exti_Interrupt();
 void dma_Interrupt();
@@ -126,7 +126,7 @@ void setup() {
 	rcc_set_prescaler(RCC_PRESCALER_APB2, RCC_APB2_HCLK_DIV_1);//24Mhz
 	adc_set_prescaler(ADC_PRE_PCLK2_DIV_2);//12MHz (Maximo do ADC)
 	myADC.setPins(&adc_pin, 1);
-	sampleTime(freq);
+  	myADC.setSampleRate(sampleTime(freq));
 	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), dma_Interrupt);
 	myADC.calibrate();
 	init_EXT(FALL);
@@ -145,7 +145,7 @@ void loop() {
 		Real[i] = 0;
 		Imag[i] = 0;
 	}
-	adc_enable = 1;
+	ADC_flag = 1;
 	while(1) {
 		while(count < avg){
 			while(1) {
@@ -183,7 +183,7 @@ void loop() {
 		wavePoint = 1;
 		count++;
 		}//End of while(count < avg)
-	adc_enable = 0;
+	ADC_flag = 0;
 	Serial.print("Frequencia: ");
 	Serial.print(freq);
 	Serial.print("\tTensão real: ");
@@ -208,11 +208,11 @@ void loop() {
 			Serial.print("\tImpedancia: ");
 			Serial.println(Zmodulo[i]);
 		}
-		while(1){__nop();}
+		while(1){}
 	}
 	freq *= fincr;
 	freqA[nptsA] = freq;
-	sampleTime(freq);
+  	myADC.setSampleRate(sampleTime(freq));
 	setFrequency(freq);
 	if(freq < LFlim)
 		avg = LFavg;
@@ -220,7 +220,7 @@ void loop() {
 		avg = HFavg;
 	init_EXT(FALL);
 	reset_AD9833();
-	adc_enable = 1;
+	ADC_flag = 1;
 	}//End of while(1)
 }//End of main
 
@@ -322,30 +322,30 @@ void writeRegisterB( uint16_t command ) {
  *  maior a frequencia mais é diminuido os ciclos de amostra.
  */
 
-void sampleTime(double freq) {
+adc_smp_rate sampleTime(double freq) {
 	if(freq < 13157){
-  		setSampleRate(ADC_SMPR_239_5);
+  		return ADC_SMPR_239_5;
   	}
   	else if(freq < 35714){
-  		setSampleRate(ADC_SMPR_71_5);
+  		return ADC_SMPR_71_5;
   	}
   	else if(freq < 42682){
-  		setSampleRate(ADC_SMPR_55_5);
+  		return ADC_SMPR_55_5;
   	}
   	else if(freq < 51470){
-  		setSampleRate(ADC_SMPR_41_5);
+  		return ADC_SMPR_41_5;
   	}
   	else if(freq < 63636){
-  		setSampleRate(ADC_SMPR_28_5);
+  		return ADC_SMPR_28_5;
   	}
   	else if(freq < 87500){
-  		setSampleRate(ADC_SMPR_13_5);
+  		return ADC_SMPR_13_5;
   	}
   	else if(freq < 102940){
-  		setSampleRate(ADC_SMPR_7_5);
+  		return ADC_SMPR_7_5;
   	}
   	else{
-  		setSampleRate(ADC_SMPR_1_5);
+  		return ADC_SMPR_1_5;
   	}
 }
 /*
@@ -354,13 +354,13 @@ void sampleTime(double freq) {
  */
 void init_EXT( int externalTrigger ) {
 	if(externalTrigger == RISE)
-		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_RISING);
+		exti_attach_interrupt(EXTI1, EXTI_PA, &exti_Interrupt, EXTI_RISING);
 	else
-		exti_attach_interrupt(1, EXTI_PA, &exti_Interrupt, EXTI_FALLING);
+		exti_attach_interrupt(EXTI1, EXTI_PA, &exti_Interrupt, EXTI_FALLING);
 }
 
 void exti_Interrupt() {
-	if(adc_enable) {
+	if(ADC_flag) {
 		myADC.startConversion();
 	}
 }
