@@ -131,6 +131,7 @@ void setup() {
 	myADC.calibrate();
 	init_EXT(FALL);
 	
+	init_AD9833(freq);
 	Serial.println("done.");
 }
 
