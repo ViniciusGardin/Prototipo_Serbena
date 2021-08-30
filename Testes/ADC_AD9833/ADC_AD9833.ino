@@ -2,11 +2,10 @@
  *
  * ADC - PA0
  * EXT - PA1
- * CLK - PA0
- * MOSI - PA0
- * FSYNCA - PA1
- * FSYNCB - PA1
- * EXT - PA1
+ * CLK - PA5
+ * MOSI - PA7
+ * FSYNCA - PB0
+ * FSYNCB - PB1
  *
  * Resistor (220)
  * Potenciometro
@@ -26,6 +25,7 @@
 #define FSYNC_A_PIN PB0
 #define FSYNC_B_PIN PB1
 
+int i;
 uint8 adc_pin = PA0;	//Para usa o endenreço de PA0
 uint16 data = 0;    	//Valor de conversão do ADC
 uint8_t ADC_flag = 0;	//Para usa o endenreço de PA0
@@ -119,6 +119,9 @@ void loop() {
 	Serial.println(point[1]);
   	myADC.setSampleRate(sampleTime(20000));
 	init_EXT(FALL);
+	i++;
+	if(i >= 1000)
+		geradorA.SleepMode(true);
 }//End of loop
 
 /*******************************************************************/
