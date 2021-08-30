@@ -1,20 +1,38 @@
+/*
+ *
+ * ADC - PA0
+ * EXT - PA1
+ *
+ * Resistor (220)
+ * Potenciometro
+ * Push-button
+ *
+ * EXT           <-> Push-button
+ * Resistor GND  <-> Push-button(na reta com o EXT)
+ * 3.3V          <-> Push-button(em diagonal com o EXT)
+ * Potenciometro <-> ADC
+ */
 #include <STM32ADC.h>
 
 /*******************************************************************/
 /*                         Variaveis                               */
 /*******************************************************************/
-uint8_t adc_pin = PA0;	//Para usa o endenreço de PA0
+uint8 adc_pin = PA0;	//Para usa o endenreço de PA0
+uint16 data = 0;    	//Valor de conversão do ADC
 uint8_t ADC_flag = 0;	//Para usa o endenreço de PA0
 uint8_t wavePoint = 1;	//Para usa o endenreço de PA0
 uint8_t DMA_flag = 0; 	//Flag que a interrupção do DMA ativa
-uint16_t data = 0;    	//Valor de conversão do ADC
-/*******************************************************************/
-/*                           Funções                               */
-/*******************************************************************/
+double point[] = {0,0};
+
 enum {
 	RISE = 0,
 	FALL
 };
+/*******************************************************************/
+/*                           Funções                               */
+/*******************************************************************/
+
+STM32ADC myADC(ADC1);
 
 adc_smp_rate sampleTime(double freq);
 void init_EXT(int externalTrigger);
@@ -24,21 +42,25 @@ void dma_Interrupt();
 /*******************************************************************/
 /*                          void setup                             */
 /*******************************************************************/
-STM32ADC myADC(ADC1);
 
 void setup() {
-	Serial.begin(115200); 
+	while(!Serial);delay(10);
 	Serial.print("Setup...");
+	pinMode(LED_BUILTIN, OUTPUT);
+	digitalWrite(LED_BUILTIN, HIGH);//Led OFF
 
 	/* Configure ADC1 ------------------------------------------------------------------*/
 	rcc_set_prescaler(RCC_PRESCALER_AHB, RCC_AHB_SYSCLK_DIV_1);//24MHz
 	rcc_set_prescaler(RCC_PRESCALER_APB2, RCC_APB2_HCLK_DIV_1);//24Mhz
 	adc_set_prescaler(ADC_PRE_PCLK2_DIV_2);//12MHz (Maximo do ADC)
+
 	myADC.setPins(&adc_pin, 1);
   	myADC.setSampleRate(sampleTime(5000));
 	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), dma_Interrupt);
 	myADC.calibrate();
 	init_EXT(FALL);
+	point[0] = 0;
+	point[1] = 0;
 	
 	Serial.println("done.");
 }
@@ -62,11 +84,13 @@ void loop() {
 					init_EXT(FALL);
 					wavePoint++;
 					break;
-			}//End os switch
+			}//End of switch
 			DMA_flag = 0;
 		}//End of if(DMA_flag)
-		if(wavePoint == 3)
+		if(wavePoint == 3) {
+			wavePoint = 1;
 			break;
+		}
 	}
 	ADC_flag = 0;
 	Serial.print("Subida: ");
@@ -75,9 +99,7 @@ void loop() {
 	Serial.println(point[1]);
   	myADC.setSampleRate(sampleTime(20000));
 	init_EXT(FALL);
-	ADC_flag = 1;
-	}//End of while(1)
-}//End of main
+}//End of loop
 
 /*******************************************************************/
 /*               Funções de configuração do STM                    */
