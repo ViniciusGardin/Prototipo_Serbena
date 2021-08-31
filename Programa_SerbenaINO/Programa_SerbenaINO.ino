@@ -1,6 +1,4 @@
  /*
- * TODO: Função de RESET duplo do AD9833
- * 
  * TODO: Fazer a calibração
  *
  * TODO: Calculuar os sampletimes dnv
@@ -217,8 +215,8 @@ void loop() {
 	else
 		avg = HFavg;
 	init_EXT(FALL);
-	geradorA.Reset();
-	geradorB.Reset();
+	//geradorA.Reset();
+	//geradorB.Reset();
 	ad9833_reset();
 	ADC_flag = 1;
 	}//End of while(1)
@@ -261,6 +259,7 @@ adc_smp_rate sampleTime(double freq) {
 }
 
 void ad9833_reset() {
+	//pinMode 
 	digitalWrite(PB0,LOW);
 	digitalWrite(PB1,LOW);
 	SPI.transfer(highByte(0x0100))
