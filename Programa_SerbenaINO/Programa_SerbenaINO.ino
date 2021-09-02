@@ -1,5 +1,7 @@
  /*
  * TODO: Fazer a calibração
+
+ * TODO: Usar como base o exemplo do Apply Signal
  *
  * TODO: Calculuar os sampletimes dnv
  *
