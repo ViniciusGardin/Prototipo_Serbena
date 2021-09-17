@@ -1,5 +1,7 @@
  /*
  * TODO: Fazer a calibração
+
+ * TODO: Usar como base o exemplo do Apply Signal
  *
  * TODO: Calculuar os sampletimes dnv
  *
@@ -9,20 +11,20 @@
  * 
  * ADC1    <-->  PA0 
  * EXTI    <-->  PA1 
+ * SCK     <-->  PA5 
+ * MOSI    <-->  PA7 
  * FSYNCA  <-->  PB0 
  * FSYNCB  <-->  PB1 
- * SCK     <-->  PA5 
- * MISO    <-->  PA6 
- * MOSI    <-->  PA7 
  */
 
 //A frequencia maxima para esse programa é 125kHz
 //frequencia inicial = 1 Hz
 //frequencia final   = 100k Hz
 
-#include <math.h>//Raiz e power
-#include <SPI.h>//Comunicação com AD
-#include <STM32ADC.h>
+#include <math.h>		//Raiz e power
+#include <STM32ADC.h>	//ADC
+#include <SPI.h>		//Comunicação com AD9833
+#include <AD9833.h>		//Gerador de sinais
 
 /*******************************************************************/
 /*                         Variaveis                               */
@@ -30,27 +32,20 @@
 #define SPI1_FSYNCA_PIN PB0
 #define SPI1_FSYNCB_PIN PB1
 
-//Comandos para o AD9833
-#define SINE_WAVE         0x2000
-#define TRIANGLE_WAVE     0x2002
-#define SQUARE_WAVE       0x2028
-#define HALF_SQUARE_WAVE  0x2020
-#define RESET_CMD         0x0100
-#define NORMAL_CMD        0x000 
-#define PHASE_WRITE_CMD   0xC000
-#define FREQ_WRITE_CMD    0x2100
-#define SLEEP             0x180 
-#define REG0              0x4000//Registrador 0
-
 #define NPTS 101  //numero de pontos = 101
 
-uint8_t adc_pin = PA0;	//Para usa o endenreço de PA0
+enum {
+	RISE = 0,
+	FALL
+};
+
+uint8 adc_pin = PA0;	//Para usa o endenreço de PA0
+uint16 data = 0;    	//Valor de conversão do ADC
 uint8_t ADC_flag = 0;	//Para usa o endenreço de PA0
 uint8_t DMA_flag = 0; 	//Flag que a interrupção do DMA ativa
 uint8_t count = 0;    	//Quantas vezes foi feita as mesmas medidas
 uint8_t wavePoint = 1;  //Ponto da onda senoidal estamos analisando
 uint8_t nptsA = 0;    	//numero do ponto atual
-uint16_t data = 0;    	//Valor de conversão do ADC
 
 long RealVar = 0; 	//Variavel do valor real
 long ImagVar = 0; 	//Variavel do valor imaginario
@@ -87,37 +82,32 @@ const uint32_t HFlim = 100000;
 /*                           Funções                               */
 /*******************************************************************/
 
-enum {
-	RISE = 0,
-	FALL
-};
+STM32ADC myADC(ADC1);
 
-void reset_AD9833();
-void init_AD9833(float frequency);
-void setFrequency(float frequency);
-void sleep_AD9833();
-void writeRegisterA(uint16_t command);
-void writeRegisterB(uint16_t command);
+AD9833 geradorA(FSYNC_A_PIN);
+AD9833 geradorB(FSYNC_B_PIN);
 
 adc_smp_rate sampleTime(double freq);
 void init_EXT(int externalTrigger);
 void exti_Interrupt();
 void dma_Interrupt();
+void ad9833_reset();
 
 /*******************************************************************/
 /*                          void setup                             */
 /*******************************************************************/
-STM32ADC myADC(ADC1);
 
 void setup() {
-	Serial.begin(115200); 
+	for(int i = 0; i < NPTS; i++) {
+		Real[i] = 0;
+		Imag[i] = 0;
+	}
+	while(!Serial);delay(10);
 	Serial.print("Setup...");
+	pinMode(LED_BUILTIN, OUTPUT);
+	digitalWrite(LED_BUILTIN, HIGH);//Led OFF
 
 	/* Configure SPI1 ------------------------------------------------------------------*/
-	SPI.begin(); //Initialize the SPI_1 port.
-	SPI.setBitOrder(MSBFIRST); // Set the SPI_1 bit order
-	SPI.setDataMode(SPI_MODE0); //Set the  SPI_2 data mode 0
-	SPI.setClockDivider(SPI_CLOCK_DIV16);      // Slow speed (72 / 16 = 4.5 MHz SPI_1 speed)
 	pinMode(SPI1_FSYNCA_PIN, OUTPUT);
 	pinMode(SPI1_FSYNCB_PIN, OUTPUT);
 	
@@ -125,13 +115,22 @@ void setup() {
 	rcc_set_prescaler(RCC_PRESCALER_AHB, RCC_AHB_SYSCLK_DIV_1);//24MHz
 	rcc_set_prescaler(RCC_PRESCALER_APB2, RCC_APB2_HCLK_DIV_1);//24Mhz
 	adc_set_prescaler(ADC_PRE_PCLK2_DIV_2);//12MHz (Maximo do ADC)
+
 	myADC.setPins(&adc_pin, 1);
   	myADC.setSampleRate(sampleTime(freq));
 	myADC.setDMA(&data, 1,(DMA_TRNS_CMPLT | DMA_CIRC_MODE), dma_Interrupt);
 	myADC.calibrate();
 	init_EXT(FALL);
 	
-	init_AD9833(freq);
+	/* Configure AD9833 ----------------------------------------------------------------*/
+	geradorA.Begin();
+	geradorA.ApplySignal(SINE_WAVE,REG0,freq);
+	geradorB.Begin();
+	geradorB.ApplySignal(SQUARE_WAVE,REG0,freq*2);
+
+	geradorA.EnableOutput(true);
+	geradorB.EnableOutput(true);
+	
 	Serial.println("done.");
 }
 
@@ -140,12 +139,6 @@ void setup() {
 /*******************************************************************/
  
 void loop() {
-	//É iniciado os valores de cada vetor
-	freqA[nptsA] = freq;
-	for(int i = 0; i < NPTS; i++) {
-		Real[i] = 0;
-		Imag[i] = 0;
-	}
 	ADC_flag = 1;
 	while(1) {
 		while(count < avg){
@@ -157,7 +150,7 @@ void loop() {
 							init_EXT(RISE);
 							wavePoint++;
 							break;
-							case 2://Sample at negative peak of sinus
+						case 2://Sample at negative peak of sinus
 							RealVar = -((data)>>1);
 							init_EXT(FALL);
 							wavePoint++;
@@ -177,11 +170,12 @@ void loop() {
 							break;
 					}//End os switch
 					DMA_flag = 0;
-					if(wavePoint == 5)
+					if(wavePoint == 5) {
+						wavePoint = 1;
 						break;//Para sair do segundo while(1)
+					}
 				}//End of if(DMA_flag)
 			}//End of second while(1)
-		wavePoint = 1;
 		count++;
 		}//End of while(count < avg)
 	ADC_flag = 0;
@@ -192,9 +186,11 @@ void loop() {
 	Serial.print("\tTensão Imaginaria: ");
 	Serial.println(Imag[nptsA]);
 	count = 0;
+	freqA[nptsA] = freq;
 	nptsA++;
 	if(nptsA >= NPTS){//Aqui acabou 
-		sleep_AD9833();
+		geradorA.SleepMode();
+		geradorB.SleepMode();
 		//Calculo da impedancia para cada frequencia
 		for(int i = 0; i<NPTS; i++) {
 			long var = res/(pow((Real[i]+RealOpen[i]),2)+pow((Imag[i] + ImagOpen[i]),2));
@@ -209,110 +205,24 @@ void loop() {
 			Serial.print("\tImpedancia: ");
 			Serial.println(Zmodulo[i]);
 		}
-		while(1){}
+		while(1);
 	}
 	freq *= fincr;
 	freqA[nptsA] = freq;
   	myADC.setSampleRate(sampleTime(freq));
-	setFrequency(freq);
+	geradorA.SetFrequency (REG0,freq);
+	geradorB.SetFrequency (REG0,2*freq);
 	if(freq < LFlim)
 		avg = LFavg;
 	else
 		avg = HFavg;
 	init_EXT(FALL);
-	reset_AD9833();
+	//geradorA.Reset();
+	//geradorB.Reset();
+	ad9833_reset();
 	ADC_flag = 1;
 	}//End of while(1)
 }//End of main
-
-/*******************************************************************/
-/*                     Funções do AD9833                           */
-/*******************************************************************/
-
-/*
- * Utilizado para resetar o AD9833 ao ligar (recomendação do manual) 
- * e ao mudar a frequencia dos dois AD9833, para que assim eles 
- * estejam sincronizados. Ao resetar ele não altera os valores de
- * frequencia e fase.
- */
-void reset_AD9833() {
-	digitalWrite(SPI1_FSYNCA_PIN, LOW);
-  	digitalWrite(SPI1_FSYNCB_PIN, LOW);
-
-  	SPI.transfer(RESET_CMD);
-  	delay(15);
-  	SPI.transfer(NORMAL_CMD);
-
-  	digitalWrite(SPI1_FSYNCA_PIN, HIGH);
-  	digitalWrite(SPI1_FSYNCB_PIN, HIGH);
-}
-
-/*
- * Inicia o AD9833. Frequency in Hz
- */
-void init_AD9833(float frequency) {
-	reset_AD9833();
-  	writeRegisterA(SINE_WAVE);
-  	writeRegisterB(SQUARE_WAVE);
-  	setFrequency(frequency);
-}
-
-/*
- *  Set the specified frequency register with the frequency (in Hz)
- */
-void setFrequency(float frequency) {
-	if(frequency > 125e3)
-  		frequency = 125e3;
-  	if(frequency < 0.0) 
-  		frequency = 0.0;
-  	
-  	uint32_t freqWord = (uint32_t)(frequency * 10.73741824);
-  	uint16_t upper14 = (uint16_t)((freqWord & 0xFFFC000) >> 14), 
-  	lower14 = (uint16_t)(freqWord & 0x3FFF);
-
-  	lower14 |= REG0;
-  	upper14 |= REG0;   
-
-  	writeRegisterA(FREQ_WRITE_CMD); 
-  	writeRegisterA(lower14);      //Write lower 14 bits to AD9833
-  	writeRegisterA(upper14);      //Write upper 14 bits to AD9833
-  	writeRegisterA(PHASE_WRITE_CMD);  //Phase = 0
-
-  	freqWord = (uint32_t)(2*frequency * 10.73741824);
-  	upper14 = (int16_t)((freqWord & 0xFFFC000) >> 14);
-  	lower14 = (int16_t)(freqWord & 0x3FFF);
-
-  	lower14 |= REG0;
-  	upper14 |= REG0;   
-
-  	//Calculo para correção da fase
-  	int LFcor = 1;
-  	if (frequency > LFlim)
-  	  LFcor = HFavg*7;
-  	uint16_t phas_corr = (uint16_t)(frequency / 256 * LFcor);   
-
-  	writeRegisterB(FREQ_WRITE_CMD); 
-  	writeRegisterB(lower14);          //Write lower 14 bits to AD9833
-  	writeRegisterB(upper14);          //Write upper 14 bits to AD9833
-  	writeRegisterB(PHASE_WRITE_CMD + phas_corr);//Phase correction
-}
-
-void sleep_AD9833() {
-    writeRegisterA(SLEEP); 
-    writeRegisterB(SLEEP); 
-}
-
-void writeRegisterA( uint16_t command ) {
-	digitalWrite(SPI1_FSYNCA_PIN, LOW);
-  	SPI.transfer(command);
-  	digitalWrite(SPI1_FSYNCA_PIN, HIGH);
-}
-
-void writeRegisterB( uint16_t command ) {
-	digitalWrite(SPI1_FSYNCB_PIN, LOW);
-  	SPI.transfer(command);
-  	digitalWrite(SPI1_FSYNCB_PIN, HIGH);
-}
 
 /*******************************************************************/
 /*               Funções de configuração do STM                    */
@@ -324,31 +234,45 @@ void writeRegisterB( uint16_t command ) {
  */
 
 adc_smp_rate sampleTime(double freq) {
-	if(freq < 13157){
+	if(freq < 11363){
   		return ADC_SMPR_239_5;
   	}
-  	else if(freq < 35714){
+  	else if(freq < 31250){
   		return ADC_SMPR_71_5;
   	}
-  	else if(freq < 42682){
+  	else if(freq < 37878){
   		return ADC_SMPR_55_5;
   	}
-  	else if(freq < 51470){
+  	else if(freq < 45454){
   		return ADC_SMPR_41_5;
   	}
-  	else if(freq < 63636){
+  	else if(freq < 56612){
   		return ADC_SMPR_28_5;
   	}
-  	else if(freq < 87500){
+  	else if(freq < 79113){
   		return ADC_SMPR_13_5;
   	}
-  	else if(freq < 102940){
+  	else if(freq < 96153){
   		return ADC_SMPR_7_5;
   	}
   	else{
   		return ADC_SMPR_1_5;
   	}
 }
+
+void ad9833_reset() {
+	//pinMode 
+	digitalWrite(PB0,LOW);
+	digitalWrite(PB1,LOW);
+	SPI.transfer(highByte(0x0100))
+	SPI.transfer(lowByte(0x0100))
+	delay(15);
+	SPI.transfer(highByte(0x000))
+	SPI.transfer(lowByte(0x000))
+	digitalWrite(PB0,HIGH);
+	digitalWrite(PB1,HIGH);
+}
+
 /*
  * External event on PA00 RISE or FALL
  *
