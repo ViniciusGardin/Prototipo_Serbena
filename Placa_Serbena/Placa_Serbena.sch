@@ -37,8 +37,6 @@ F 3 "~" H 8050 2600 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	6700 2100 7050 2100
-Wire Wire Line
-	8250 2000 8700 2000
 $Comp
 L power:GNDREF #PWR0101
 U 1 1 60DDF51C
@@ -51,10 +49,10 @@ F 3 "" H 6100 3000 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Device:R R2
+L Device:R 200r
 U 1 1 60DF3CBE
 P 6450 2500
-F 0 "R2" V 6243 2500 50  0000 C CNN
+F 0 "200r" V 6243 2500 50  0000 C CNN
 F 1 "R" V 6334 2500 50  0000 C CNN
 F 2 "" V 6380 2500 50  0001 C CNN
 F 3 "~" H 6450 2500 50  0001 C CNN
@@ -62,10 +60,10 @@ F 3 "~" H 6450 2500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L Device:R R1
+L Device:R 100r
 U 1 1 60DF477B
 P 6100 2750
-F 0 "R1" H 6170 2796 50  0000 L CNN
+F 0 "100r" H 6170 2796 50  0000 L CNN
 F 1 "R" H 6170 2705 50  0000 L CNN
 F 2 "" V 6030 2750 50  0001 C CNN
 F 3 "~" H 6100 2750 50  0001 C CNN
@@ -86,63 +84,6 @@ Wire Wire Line
 Wire Wire Line
 	6100 2900 6100 3000
 Connection ~ 6700 2100
-$Comp
-L Amplifier_Operational:LM324 U5
-U 1 1 60E18353
-P 9000 2100
-F 0 "U5" H 9000 2467 50  0000 C CNN
-F 1 "LM324" H 9000 2376 50  0000 C CNN
-F 2 "" H 8950 2200 50  0001 C CNN
-F 3 "http://www.ti.com/lit/ds/symlink/lm2902-n.pdf" H 9050 2300 50  0001 C CNN
-	1    9000 2100
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:GNDREF #PWR0102
-U 1 1 60E1835B
-P 8700 3000
-F 0 "#PWR0102" H 8700 2750 50  0001 C CNN
-F 1 "GNDREF" H 8705 2827 50  0000 C CNN
-F 2 "" H 8700 3000 50  0001 C CNN
-F 3 "" H 8700 3000 50  0001 C CNN
-	1    8700 3000
-	1    0    0    -1  
-$EndComp
-$Comp
-L Device:R R6
-U 1 1 60E18361
-P 9050 2500
-F 0 "R6" V 8843 2500 50  0000 C CNN
-F 1 "R" V 8934 2500 50  0000 C CNN
-F 2 "" V 8980 2500 50  0001 C CNN
-F 3 "~" H 9050 2500 50  0001 C CNN
-	1    9050 2500
-	0    1    1    0   
-$EndComp
-$Comp
-L Device:R R5
-U 1 1 60E18367
-P 8700 2750
-F 0 "R5" H 8770 2796 50  0000 L CNN
-F 1 "R" H 8770 2705 50  0000 L CNN
-F 2 "" V 8630 2750 50  0001 C CNN
-F 3 "~" H 8700 2750 50  0001 C CNN
-	1    8700 2750
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	8700 2200 8700 2500
-Wire Wire Line
-	8900 2500 8700 2500
-Connection ~ 8700 2500
-Wire Wire Line
-	8700 2500 8700 2600
-Wire Wire Line
-	9300 2100 9300 2500
-Wire Wire Line
-	9300 2500 9200 2500
-Wire Wire Line
-	8700 2900 8700 3000
 $Comp
 L power:GNDREF #PWR0103
 U 1 1 60E94B3D
@@ -195,7 +136,6 @@ Wire Wire Line
 	8250 2000 8250 2200
 Wire Wire Line
 	7950 2000 8250 2000
-Connection ~ 8250 2000
 Wire Wire Line
 	8250 2200 8250 2500
 Connection ~ 8250 2200
@@ -246,9 +186,6 @@ $EndComp
 Wire Wire Line
 	4900 2000 6100 2000
 Wire Wire Line
-	9300 2100 9550 2100
-Connection ~ 9300 2100
-Wire Wire Line
 	4400 2400 4400 2550
 Wire Wire Line
 	4400 2550 4300 2550
@@ -280,7 +217,7 @@ $EndComp
 Wire Wire Line
 	4900 3850 5100 3850
 $Comp
-L stm32f103c8t6-module-china:stm32f103c8t6-module-china U?
+L Placa_Serbena-rescue:stm32f103c8t6-module-china-stm32f103c8t6-module-china U?
 U 1 1 61304A6A
 P 2050 2800
 F 0 "U?" H 2050 4537 60  0000 C CNN
@@ -338,8 +275,6 @@ Wire Wire Line
 	3200 3650 3200 4900
 Wire Wire Line
 	3200 4900 9550 4900
-Wire Wire Line
-	9550 4900 9550 2100
 $Comp
 L Switch:SW_DPDT_x2 SW?
 U 1 1 6133ED9E
